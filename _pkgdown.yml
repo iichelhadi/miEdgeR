@@ -1,0 +1,53 @@
+template:
+  bootstrap: 5
+
+url: https://iichelhadi.github.io/miEdgeR/
+
+navbar:
+  structure:
+    left: [home, articles, reference]
+    right: [github]
+
+home:
+  title: miEdgeR - Mutual Information Network and Hypergraph Analysis
+
+reference:
+  - title: Core Functions
+    contents:
+      - choose_adaptive_nbins  # Added
+      - compute_cmi_matrix_parallel  # Added
+      - compute_mi_matrix_parallel  # Added
+      - compute_mi_network
+      - build_mi_graph
+      - percolate_graph
+      - detect_communities
+      - detect_communities_across_bins
+      - filter_housekeeping  # Added
+      - get_expr_data  # Added
+  - title: Pseudotime Analysis
+    contents:
+      - compute_pseudotime_mi_network
+      - edge_gain_loss
+      - edge_pt_correlation
+      - gene_pt_correlation
+      - make_pt_bins  # Added
+      - plot_edge_correlations
+      - plot_edge_gain_loss
+      - plot_module_trajectories
+  - title: Enrichment Analysis
+    contents:
+      - enrich_go
+      - plot_go_terms
+  - title: Visualization and Summaries
+    contents:
+      - make_hypergraph  # Added
+      - plot_hypergraph
+      - plot_mi_network
+      - summarize_hub_genes
+      - summarize_hub_genes_across_bins
+
+articles:
+  - title: Tutorials
+    contents:
+      - mi_network_hypergraph
+      - pseudotime_mi_network

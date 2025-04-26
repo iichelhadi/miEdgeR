@@ -1,0 +1,16 @@
+Package: miEdgeR
+Type: Package
+Title: Mutual Information Network and Hypergraph Analysis for Seurat Data
+Version: 0.1.0
+Author: Elhadi Iich
+Maintainer: Elhadi Iich <e.iich@hotmail.nl>
+Description: Provides tools for mutual information-based gene network analysis,
+    hypergraph construction, and pseudotime-aware analyses for single-cell RNA-seq data.
+Depends: R (>= 4.0), Seurat, igraph, dplyr, ggplot2, clusterProfiler, org.Hs.eg.db, ggpubr, ggVennDiagram, pheatmap
+Imports: Seurat, igraph, clusterProfiler, org.Hs.eg.db, dplyr, ggplot2, ggraph, flextable, pheatmap, RColorBrewer, DOSE, ReactomePA, ggpubr, scales, grDevices
+License: MIT
+Encoding: UTF-8
+RoxygenNote: 7.3.2
+Suggests: rmarkdown, knitr
+VignetteBuilder: knitr
+URL: https://iichelhadi.github.io/miEdgeR/

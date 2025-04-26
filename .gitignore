@@ -1,0 +1,6 @@
+*.tar.gz
+.Rproj.user
+.Rhistory
+.RData
+.rds
+.csv

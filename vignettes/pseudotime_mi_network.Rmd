@@ -1,0 +1,375 @@
+---
+title: "Pseudotime-Aware MI Network Analysis with miEdgeR"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Pseudotime-Aware MI Network Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## About this vignette
+
+This tutorial demonstrates how to incorporate pseudotime information into mutual-information (MI) network analysis using miEdgeR. We bin cells along a trajectory, build MI networks per bin, detect communities, and track dynamic changes in modules, hub genes, and enrichment across pseudotime.
+
+## Prerequisites:
+
+R (≥ 4.2.0)
+
+Seurat object containing cluster metadata (RNA_snn_res.0.2) and a numeric pseudotime column
+
+Packages: miEdgeR, Seurat, igraph, clusterProfiler, org.Hs.eg.db, ggplot2, ggraph, flextable, pheatmap
+
+## Introduction
+
+We extend the MI-network workflow by leveraging single-cell pseudotime. After generating a pseudotime vector, we bin cells into discrete stages, compute MI networks in each bin, and then analyze how community structure, hub genes, and functional enrichment evolve along the trajectory.
+
+## Load Libraries and Data
+
+Load all dependencies and read the preprocessed Seurat object. Ensure your object includes clustering and pseudotime metadata.
+
+```{r}
+library(Seurat)
+library(miEdgeR)
+library(igraph)
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(dplyr)
+library(ggplot2)
+library(ggraph)
+library(flextable)
+library(pheatmap)
+
+seurat_obj <- readRDS('pbmc3k.rds')
+```
+
+## Generate or Verify Pseudotime
+
+Here we generate a **mock** pseudotime for cluster 1 and plot its distribution.
+
+```{r,fig.alt="pseudotime distribution histogram"}
+set.seed(123)
+cluster_1_cells <- colnames(seurat_obj)[seurat_obj@meta.data$RNA_snn_res.0.1 == "1"]
+mock_pseudotime <- numeric(ncol(seurat_obj))
+names(mock_pseudotime) <- colnames(seurat_obj)
+mock_pseudotime[cluster_1_cells] <- seq(0, 1, length.out = length(cluster_1_cells))
+other_cells <- setdiff(colnames(seurat_obj), cluster_1_cells)
+mock_pseudotime[other_cells] <- runif(length(other_cells), 0, 1)
+seurat_obj@meta.data$pseudotime <- mock_pseudotime[match(rownames(seurat_obj@meta.data), names(mock_pseudotime))]
+p_pt <- ggplot(data.frame(pseudotime = seurat_obj@meta.data[cluster_1_cells, "pseudotime"]), aes(x = pseudotime)) +
+  geom_histogram(bins = 30, fill = "#f56642", color = "black") +
+  labs(title = "Pseudotime Distribution for Cluster 1", x = "Pseudotime", y = "Cell Count") +
+  theme_minimal()
+print(p_pt)
+```
+
+
+<!-- ## Verify Pseudotime -->
+<!-- Confirm pseudotime data for selected cluster. -->
+
+<!-- ```{r} -->
+<!-- seurat_obj@meta.data$pseudotime <- seurat_obj@meta.data$Lineage2_2 -->
+<!-- cluster_1_cells <- colnames(seurat_obj)[seurat_obj@meta.data$monocle_clusters2 == "5"] -->
+<!-- cat("Cluster 5 cells:", length(cluster_1_cells), "\n") -->
+<!-- cat("Pseudotime non-NAs:", sum(!is.na(seurat_obj@meta.data[cluster_1_cells, "pseudotime"])), "\n") -->
+<!-- cat("Pseudotime range:", range(seurat_obj@meta.data[cluster_1_cells, "pseudotime"], na.rm = TRUE), "\n") -->
+<!-- p_pt <- ggplot(data.frame(pseudotime = seurat_obj@meta.data[cluster_1_cells, "pseudotime"]), aes(x = pseudotime)) + -->
+<!--   geom_histogram(bins = 30, fill = "#f56642", color = "black") + -->
+<!--   labs(title = "Pseudotime Distribution for Cluster 5", x = "Pseudotime", y = "Cell Count") + -->
+<!--   theme_minimal() -->
+<!-- print(p_pt) -->
+<!-- ``` -->
+
+
+## Compute Pseudotime MI Networks
+
+For each pseudotime bin **(3 bins)**, we extract cells, filter top variable genes, compute MI in parallel, and build thresholded igraph objects.
+
+```{r}
+pt_results <- miEdgeR::compute_pseudotime_mi_network(
+  seurat_obj,
+  cluster_id = "1",
+  cluster_field = "RNA_snn_res.0.1",
+  pseudotime_col = "pseudotime",
+  assay_name = "RNA",
+  counts_layer = "counts",
+  data_layer = "data",
+  min_expr_pct = 0.05,
+  top_n_genes = 3000,
+  min_cells_bin = 50,
+  n_bins = 3, ## set the number of pseudotime bins
+  n_cores = 65
+)
+cat("Valid bins:", sum(!sapply(pt_results, is.null)), "\n")
+```
+
+## Summarize Bin Graphs
+
+Quick summary of node and edge counts and density per bin to assess network complexity over pseudotime.
+
+```{r}
+for (bin in names(pt_results)) {
+  if (!is.null(pt_results[[bin]])) {
+    cat("Bin", bin, "- Vertices:", igraph::vcount(pt_results[[bin]]), "\n")
+    cat("Bin", bin, "- Edges:", igraph::ecount(pt_results[[bin]]), "\n")
+    cat("Bin", bin, "- Density:", igraph::graph.density(pt_results[[bin]]), "\n")
+  } else {
+    cat("Bin", bin, "- Skipped (insufficient cells)\n")
+  }
+}
+```
+
+All bins yielded valid networks with consistent structure (2911 genes, ~211K edges, density ≈ 0.05), indicating stable co-regulatory patterns across pseudotime stages in Cluster 1.
+
+## Community Detection
+
+Detect robust gene modules per bin by percolation (noise filtering) followed by Leiden clustering and neighborhood-overlap expansion.
+
+```{r}
+comm_results <- detect_communities_across_bins(
+  pt_results,
+  min_size = 50,
+  n_iterations = 100,
+  edge_fraction = 0.6,
+  freq_threshold = 0.5,
+  percentile = 0.95,
+  resolution_parameter = 0.5,
+  overlap_threshold = 0.1
+)
+```
+
+We applied `detect_communities_across_bins()` to identify stable gene communities across pseudotime bins. Each bin’s consensus MI network revealed large co-expression modules, with Bin PT1 showing one major community (size: 1017), while Bins PT2 and PT3 displayed two communities each (sizes: 957/590 and 970/694, respectively). This suggests dynamic reorganization of gene modules during pseudotime progression in Cluster 1.
+
+## Community Sizes
+
+Bar plot showing how module sizes vary across pseudotime bins.
+
+```{r, fig.width = 7, fig.alt="bar plot of module sizes per bin"}
+comm_sizes_df <- bind_rows(lapply(comm_results, function(res) {
+  data.frame(Bin = res$bin, Community = paste("Group", seq_along(res$sizes)), Size = res$sizes)
+}))
+p_comm_sizes <- ggplot(comm_sizes_df, aes(x = Bin, y = Size, fill = Community)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Community Sizes Across Pseudotime Bins (C5)", x = "Pseudotime Bin", y = "Community Size") +
+  theme_minimal()
+print(p_comm_sizes)
+```
+
+## GO Enrichment
+
+Perform enrichment for communities after filtering of housekeeping genes which tend to be over-represented due to their high mi-scores
+
+```{r}
+library(DOSE)
+enrich_results <- enrich_go(comm_results,semantic_space = 'GO',ontology = 'BP')
+```
+
+```{r, fig.width=7, fig.height=4, fig.alt="Dot plot of enriched terms"}
+# Plot the top 4 terms per community
+dot_plot <- plot_go_terms(enrich_results, top_n_terms = 5, ontology = "BP")
+print(dot_plot)
+## Save Results
+```
+
+## Hub Gene Changes Across Pseudotime
+
+Identify top hub genes in each module and tabulate their presence across bins.
+
+```{r }
+hub_changes <- bind_rows(lapply(comm_results, function(res) {
+  bin <- res$bin
+  hub_data <- lapply(seq_along(res$communities), function(i) {
+    genes <- res$communities[[i]]
+    subgraph <- igraph::induced_subgraph(pt_results[[bin]], igraph::V(pt_results[[bin]])[name %in% genes])
+    if (igraph::vcount(subgraph) == 0) return(NULL)
+    deg <- igraph::degree(subgraph)
+    top_hubs <- names(sort(deg, decreasing = TRUE))[1:min(5, length(deg))]
+    data.frame(Bin = bin, Community = paste("Group", i), Hub_Gene = top_hubs, stringsAsFactors = FALSE)
+  })
+  do.call(rbind, hub_data)
+}))
+
+# Visualize hub gene presence across bins
+hub_presence <- hub_changes %>%
+  group_by(Hub_Gene) %>%
+  summarise(Bins_Present = paste(Bin, collapse = ", "), Communities = paste(unique(Community), collapse = ", "), .groups = "drop")
+ft_hub <- flextable::flextable(hub_presence) %>%
+  flextable::autofit() %>%
+  flextable::set_header_labels(Hub_Gene = "Hub Gene", Bins_Present = "Bins Present", Communities = "Communities") %>%
+  flextable::bg(part = "header", bg = "gray") %>%
+  flextable::theme_vanilla()
+ft_hub
+```
+
+## Hub Genes
+
+Identify top hub genes for communities in each pseudotime bin.
+
+```{r}
+ft <- summarize_hub_genes_across_bins(comm_results, pt_results, top_n = 10)
+ft
+```
+
+## Edge Gain/Loss Analysis
+Compare stable, gained, and lost edges between consecutive pseudotime bins.
+```{r, fig.width=8, fig.alt="bar plot of edges changes between bins"}
+result <- plot_edge_gain_loss(pt_results, cluster_id = "C1")
+p_gl <- result$plot  # Correct assignment
+print(p_gl)
+
+# Inspect specific edges (e.g., for PT1 to PT2)
+pt1_to_pt2_edges <- result$edge_details[["PT1 to PT2"]]
+cat("Gained edges (PT1 to PT2):\n")
+if (!is.null(pt1_to_pt2_edges$gained)) {
+  print(head(pt1_to_pt2_edges$gained, 10))
+  write.csv(pt1_to_pt2_edges$gained, "gained_edges_PT1_to_PT2.csv", row.names = FALSE)
+} else {
+  cat("No gained edges found.\n")
+}
+
+cat("Lost edges (PT1 to PT2):\n")
+if (!is.null(pt1_to_pt2_edges$lost)) {
+  print(head(pt1_to_pt2_edges$lost, 10))
+  write.csv(pt1_to_pt2_edges$lost, "lost_edges_PT1_to_PT2.csv", row.names = FALSE)
+} else {
+  cat("No lost edges found.\n")
+}
+
+cat("Stable edges (PT1 to PT2):\n")
+if (!is.null(pt1_to_pt2_edges$stable)) {
+  print(head(pt1_to_pt2_edges$stable, 10))
+  write.csv(pt1_to_pt2_edges$stable, "stable_edges_PT1_to_PT2.csv", row.names = FALSE)
+} else {
+  cat("No stable edges found.\n")
+}
+
+# Repeat for PT2 to PT3
+pt2_to_pt3_edges <- result$edge_details[["PT2 to PT3"]]
+cat("Gained edges (PT2 to PT3):\n")
+if (!is.null(pt2_to_pt3_edges$gained)) {
+  print(head(pt2_to_pt3_edges$gained, 10))
+  write.csv(pt2_to_pt3_edges$gained, "gained_edges_PT2_to_PT3.csv", row.names = FALSE)
+} else {
+  cat("No gained edges found.\n")
+}
+```
+
+To further explore dynamic gene interactions, we used `plot_edge_gain_loss()` to quantify and visualize stable, gained, and lost edges between consecutive pseudotime bins. The function returns both a summary plot and detailed edge lists for each transition. For example, from **PT1→PT2**, over 120K edges were gained or lost, and ~87K remained stable. Exported edge tables (e.g., 'gained_edges_PT1_to_PT2.csv') can be used for downstream analysis of context-specific co-regulation.
+
+## Gene-Pseudotime Correlation Density
+
+Plot distribution of gene expression–pseudotime correlations to gauge overall trends.
+
+```{r, fig.width=8, fig.alt="Distriution of gene correlations with pseudotime"}
+gc_df <- gene_pt_correlation(
+  seurat_obj[, seurat_obj@meta.data$RNA_snn_res.0.1 == "1"],
+  pseudotime_col = "pseudotime", assay = "RNA", layer = "data", method = "spearman"
+) %>% mutate(Cluster = "C1")
+p_gc <- ggplot(gc_df, aes(x = Cor, color = Cluster, fill = Cluster)) +
+  geom_density(alpha = 0.3, color = "#00B6EB", fill = "#00B6EB") +
+  labs(title = "Gene-Pseudotime Correlation Density", x = "Spearman ρ", y = "Density") +
+  theme_minimal()
+print(p_gc)
+```
+
+## Top ±10 Genes by Correlation
+
+Plot top 10 positively and negatively correlated genes.
+
+```{r, fig.width = 6, fig.height=6, fig.alt="Bar plot of genes correlated with pseudotime" }
+top_genes_df <- gc_df %>%
+  filter(!is.na(Cor)) %>%
+  slice_max(Cor, n = 10) %>%
+  mutate(Direction = "Positive") %>%
+  bind_rows(
+    gc_df %>% filter(!is.na(Cor)) %>% slice_min(Cor, n = 10) %>% mutate(Direction = "Negative")
+  ) %>%
+  mutate(Gene = factor(Gene, levels = unique(Gene)))
+p_top_genes <- ggplot(top_genes_df, aes(x = Cor, y = Gene, fill = Direction)) +
+  geom_col(show.legend = FALSE) +
+  facet_grid(Direction ~ Cluster, scales = "free_y") +
+  labs(title = "Top ±10 Genes by Pseudotime Correlation", x = "Spearman ρ", y = "") +
+  theme_minimal()
+print(p_top_genes)
+```
+
+## Heatmap of Top 10 Genes
+
+Heatmap of top 10 genes by pseudotime correlation.
+
+```{r, fig.width= 8, fig.alt="Heatmap of top 10 genes correlated with pseudotime"}
+top10 <- gc_df %>% slice_max(Cor, n = 10) %>% pull(Gene) %>% unique()
+valid_cells <- colnames(seurat_obj)[seurat_obj@meta.data$RNA_snn_res.0.1 == "1" & !is.na(seurat_obj@meta.data$pseudotime)]
+cells <- valid_cells[order(seurat_obj@meta.data[valid_cells, "pseudotime"])]
+expr <- GetAssayData(seurat_obj, assay = "RNA", slot = "data")
+present <- intersect(top10, rownames(expr))
+missing <- setdiff(top10, rownames(expr))
+mat <- expr[present, cells, drop = FALSE]
+if (length(missing)) {
+  mat2 <- matrix(NA, nrow = length(missing), ncol = length(cells), dimnames = list(missing, cells))
+  mat <- rbind(mat, mat2)
+}
+mat <- mat[top10, , drop = FALSE]
+pheatmap(mat, cluster_rows = FALSE, cluster_cols = FALSE, show_colnames = FALSE,
+         main = "Top 10 Genes by Pseudotime Correlation")
+```
+
+
+## Module-Score Trajectories
+
+Compute and plot module scores for PT2 communities along pseudotime.
+
+```{r, fig.width=8, fig.alt="Module trajectory plot"}
+# Define custom modules to plot
+custom_mods <- list(
+  M1 = c('S100A8', 'UBB', 'SSR4'),
+  M2 = c('LGALS9', 'HLA-DPA1')
+)
+
+# Plot trajectories for custom modules in PT2
+p_modtraj <- plot_module_trajectories(
+  comm_results, seurat_obj, bin_index = 2, 
+  custom_modules = custom_mods,
+  cluster_field = "RNA_snn_res.0.1", cluster_id = "1", assay = "RNA"
+)
+print(p_modtraj)
+```
+
+## Edge-Pseudotime Correlation Density
+
+Compute and plot the density of edge-pseudotime correlations for a specified pseudotime bin.
+We evaluated how gene-gene interactions change with pseudotime by computing Spearman correlations between edge expression and pseudotime in PT2. Using `plot_edge_correlations()`, we observed that edge correlations are centered around zero across all groups. While Community 1 and Community 2 show similar distributions, subtle differences suggest distinct temporal dynamics within and across gene modules.
+
+```{r, fig.width=8, fig.alt="Edge correlation histogram"}
+p_ec <- plot_edge_correlations(
+  comm_results, pt_results, seurat_obj, bin_name = "PT2",
+  cluster_field = "RNA_snn_res.0.1", cluster_id = "1", assay = "RNA",
+  layer = "data", pseudotime_col = "pseudotime", method = "spearman",
+  edge_threshold = 0.95, n_cores = 36
+)
+print(p_ec)
+```
+
+
+## Combined Summary Plots
+
+Arrange key plots into a composite figure for quick overview.
+
+```{r, fig.width= 12, fig.height= 8, fig.alt="Combined plot"}
+(p_pt | p_gc) / (p_ec | p_gl) / p_modtraj
+```
+
+## Save Results
+
+```{r}
+# saveRDS(pt_results, "pseudotime_results.rds")
+# saveRDS(comm_results, "pseudotime_communities.rds")
+# saveRDS(enrich_results, "enrich_results.rds")
+```
+
+```{r}
+sessionInfo()
+```
