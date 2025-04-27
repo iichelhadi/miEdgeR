@@ -4,6 +4,16 @@
 > hypergraph construction & pseudotime-aware workflows  
 > for single-cell RNA-seq data.
 
+miEdgeR provides a streamlined pipeline for single‐cell RNA‐seq data that:
+
+    Builds nonlinear gene–gene networks via mutual information
+
+    Detects robust gene modules with the Leiden community algorithm
+
+    Encodes overlapping modules as a hypergraph
+
+    Quantifies module dynamics along pseudotime trajectories
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
@@ -69,3 +79,7 @@ hg          <- make_hypergraph(communities)
 plot_hypergraph(hg, title = "Overlapping Gene Modules")
 ```
 
+## Tutorials
+
+- [MI Network and Hypergraph Analysis with miEdgeR](articles/mi_network_hypergraph.html)
+- [Pseudotime-Aware MI Network Analysis with miEdgeR](articles/pseudotime_mi_network.html)
