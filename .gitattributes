@@ -1,1 +1,11 @@
+# (you already have your LFS rule)
 *.rds filter=lfs diff=lfs merge=lfs -text
+
+# ───────────────────────────────────────────────────────────────
+# 1. Ignore generated HTML when counting languages:
+*.html linguist-generated
+docs/** linguist-vendored      # if your pkgdown/html lives under docs/
+
+# 2. Force .R (and lowercase .r) files to count as R:
+*.R   linguist-language=R
+*.r   linguist-language=R
