@@ -41,8 +41,78 @@
   </div>
 </nav><div class="container template-home">
 <div class="row">
-  <main id="main" class="col-md-9">
-Provides tools for mutual information-based gene network analysis, hypergraph construction, and pseudotime-aware analyses for single-cell RNA-seq data.
+  <main id="main" class="col-md-9"><div class="section level1">
+<div class="page-header"><h1 id="miedger">miEdgeR<a class="anchor" aria-label="anchor" href="#miedger"></a>
+</h1></div>
+<blockquote>
+<p>Mutual-information based gene network analysis,<br>
+hypergraph construction &amp; pseudotime-aware workflows<br>
+for single-cell RNA-seq data.</p>
+</blockquote>
+<p><a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a></p>
+<hr>
+<div class="figure">
+<img src="inst/figures/miEdgeR_workflow.png" alt=""><p class="caption">Workflow schematic</p>
+</div>
+<div class="section level2">
+<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+</h2>
+<p>You can install the development version from GitHub with:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"iichelhadi/miEdgeR"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
+</h2>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># 1. Load libraries and data</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://iichelhadi.github.io/miEdgeR/">miEdgeR</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://igraph.org" class="external-link">igraph</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggplot2.tidyverse.org" class="external-link">ggplot2</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ggraph.data-imaginist.com" class="external-link">ggraph</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://ardata-fr.github.io/flextable-book/" class="external-link">flextable</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Replace with your own file if needed:</span></span>
+<span><span class="va">seurat_obj</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html" class="external-link">readRDS</a></span><span class="op">(</span><span class="st">"pbmc3k.rds"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 2. Build the MI network for cluster "1"</span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/compute_mi_network.html">compute_mi_network</a></span><span class="op">(</span></span>
+<span>  <span class="va">seurat_obj</span>,</span>
+<span>  cluster_id     <span class="op">=</span> <span class="st">"1"</span>,</span>
+<span>  cluster_field  <span class="op">=</span> <span class="st">"RNA_snn_res.0.1"</span>,</span>
+<span>  assay_name     <span class="op">=</span> <span class="st">"RNA"</span>,</span>
+<span>  min_expr_pct   <span class="op">=</span> <span class="fl">0.05</span>,</span>
+<span>  top_n_genes    <span class="op">=</span> <span class="fl">3000</span>,</span>
+<span>  n_cores        <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3. Threshold at the 95th percentile</span></span>
+<span><span class="va">g</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/build_mi_graph.html">build_mi_graph</a></span><span class="op">(</span></span>
+<span>  <span class="va">result</span><span class="op">$</span><span class="va">mi_matrix</span>,</span>
+<span>  threshold_method <span class="op">=</span> <span class="st">"percentile"</span>,</span>
+<span>  percentile       <span class="op">=</span> <span class="fl">0.95</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 4. Denoise via percolation</span></span>
+<span><span class="va">g_consensus</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/percolate_graph.html">percolate_graph</a></span><span class="op">(</span></span>
+<span>  <span class="va">g</span>,</span>
+<span>  n_iterations   <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  edge_fraction  <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span>  freq_threshold <span class="op">=</span> <span class="fl">0.5</span>,</span>
+<span>  percentile     <span class="op">=</span> <span class="fl">0.95</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 5. Detect communities and make a hypergraph</span></span>
+<span><span class="va">communities</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/detect_communities.html">detect_communities</a></span><span class="op">(</span><span class="va">g_consensus</span><span class="op">)</span></span>
+<span><span class="va">hg</span>          <span class="op">&lt;-</span> <span class="fu"><a href="reference/make_hypergraph.html">make_hypergraph</a></span><span class="op">(</span><span class="va">communities</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 6. Visualize the hypergraph</span></span>
+<span><span class="fu"><a href="reference/plot_hypergraph.html">plot_hypergraph</a></span><span class="op">(</span><span class="va">hg</span>, title <span class="op">=</span> <span class="st">"Overlapping Gene Modules"</span><span class="op">)</span></span></code></pre></div>
+</div>
+</div>
   </main><aside class="col-md-3"><div class="license">
 <h2 data-toc-skip>License</h2>
 <ul class="list-unstyled">
@@ -82,7 +152,9 @@ Provides tools for mutual information-based gene network analysis, hypergraph co
     </footer>
 </div>
 
+
+
+
+
   </body>
 </html>
-
-<!-- Force redeployment -->
