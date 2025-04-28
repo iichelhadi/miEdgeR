@@ -19,7 +19,7 @@ This tutorial demonstrates how to incorporate pseudotime information into mutual
 
 R (≥ 4.2.0)
 
-Seurat object containing cluster metadata (RNA_snn_res.0.2) and a numeric pseudotime column
+Seurat object containing cluster metadata (RNA_snn_res.0.1) and a numeric pseudotime column
 
 Packages: miEdgeR, Seurat, igraph, clusterProfiler, org.Hs.eg.db, ggplot2, ggraph, flextable, pheatmap
 
@@ -101,7 +101,7 @@ pt_results <- miEdgeR::compute_pseudotime_mi_network(
   top_n_genes = 3000,
   min_cells_bin = 50,
   n_bins = 3, ## set the number of pseudotime bins
-  n_cores = 65
+  n_cores = parallel::detectCores() - 5
 )
 cat("Valid bins:", sum(!sapply(pt_results, is.null)), "\n")
 ```

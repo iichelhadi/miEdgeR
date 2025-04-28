@@ -10,6 +10,7 @@ navbar:
 
 home:
   title: miEdgeR - Mutual Information Network and Hypergraph Analysis
+  path: README.md
 
 reference:
   - title: Core Functions

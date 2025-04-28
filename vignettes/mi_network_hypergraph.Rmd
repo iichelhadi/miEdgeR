@@ -19,7 +19,7 @@ Prerequisites:
 
 R (≥ 4.2.0)
 
-Seurat object with clustering metadata (RNA_snn_res.0.2) and optional pseudotime
+Seurat object with clustering metadata (eg. RNA_snn_res.0.1) and optional pseudotime
 
 Packages: miEdgeR, Seurat, igraph, hypergraph, dplyr, ggplot2, ggraph, flextable
 
@@ -80,7 +80,7 @@ result <- compute_mi_network(
   data_layer = "data",
   min_expr_pct = 0.05,
   top_n_genes = 3000,
-  n_cores = 65
+  n_cores = parallel::detectCores() - 5
 )
 mi_matrix <- result$mi_matrix
 graph_percentile <- build_mi_graph(mi_matrix, 
