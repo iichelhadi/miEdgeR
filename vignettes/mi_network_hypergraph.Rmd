@@ -25,7 +25,9 @@ Packages: miEdgeR, Seurat, igraph, hypergraph, dplyr, ggplot2, ggraph, flextable
 
 ## Introduction
 
-This vignette walks through the key steps of MI network construction and higher-order hypergraph analysis. Starting with a Seurat object we show how to filter for highly variable genes, compute and threshold MI, remove noise with percolation, detect communities, and finally represent those communities as hyperedges.
+This vignette walks through the key steps of MI network construction and higher-order hypergraph analysis. Starting with a Seurat object, we show how to filter for highly variable genes, compute and threshold mutual information (MI), remove noise via percolation, detect communities, and represent those communities as hyperedges.
+
+    Note: This vignette requires the PBMC 3K dataset originally provided by the Seurat team. Please download the file pbmc3k.rds and place it in your working directory before running the code chunks.
 
 ## Load Libraries and Data
 

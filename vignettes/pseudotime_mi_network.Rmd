@@ -27,6 +27,7 @@ Packages: miEdgeR, Seurat, igraph, clusterProfiler, org.Hs.eg.db, ggplot2, ggrap
 
 We extend the MI-network workflow by leveraging single-cell pseudotime. After generating a pseudotime vector, we bin cells into discrete stages, compute MI networks in each bin, and then analyze how community structure, hub genes, and functional enrichment evolve along the trajectory.
 
+    Note: This vignette requires the PBMC 3K dataset originally provided by the Seurat team. Please download the file pbmc3k.rds and place it in your working directory before running the code chunks.
 ## Load Libraries and Data
 
 Load all dependencies and read the preprocessed Seurat object. Ensure your object includes clustering and pseudotime metadata.

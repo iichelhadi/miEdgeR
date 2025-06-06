@@ -8,8 +8,8 @@
 <title>Pseudotime-Aware MI Network Analysis with miEdgeR • miEdgeR</title>
 <script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
-<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Pseudotime-Aware MI Network Analysis with miEdgeR">
 </head>
 <body>
@@ -32,7 +32,9 @@
 <li class="active nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
       </ul>
-<ul class="navbar-nav"></ul>
+<ul class="navbar-nav">
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/iichelhadi/miEdgeR/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+      </ul>
 </div>
 
 
@@ -41,14 +43,14 @@
 
 
 
-<link href="pseudotime_mi_network_files/tabwid-1.1.3/tabwid.css" rel="stylesheet">
+<script src="pseudotime_mi_network_files/accessible-code-block-0.0.1/empty-anchor.js"></script><link href="pseudotime_mi_network_files/tabwid-1.1.3/tabwid.css" rel="stylesheet">
 <script src="pseudotime_mi_network_files/tabwid-1.1.3/tabwid.js"></script><div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Pseudotime-Aware MI Network Analysis with miEdgeR</h1>
             
       
-
+      <small class="dont-index">Source: <a href="https://github.com/iichelhadi/miEdgeR/blob/HEAD/vignettes/pseudotime_mi_network.Rmd" class="external-link"><code>vignettes/pseudotime_mi_network.Rmd</code></a></small>
       <div class="d-none name"><code>pseudotime_mi_network.Rmd</code></div>
     </div>
 
@@ -57,39 +59,29 @@
 <div class="section level2">
 <h2 id="about-this-vignette">About this vignette<a class="anchor" aria-label="anchor" href="#about-this-vignette"></a>
 </h2>
-<p>This tutorial demonstrates how to incorporate pseudotime information
-into mutual-information (MI) network analysis using miEdgeR. We bin
-cells along a trajectory, build MI networks per bin, detect communities,
-and track dynamic changes in modules, hub genes, and enrichment across
-pseudotime.</p>
+<p>This tutorial demonstrates how to incorporate pseudotime information into mutual-information (MI) network analysis using miEdgeR. We bin cells along a trajectory, build MI networks per bin, detect communities, and track dynamic changes in modules, hub genes, and enrichment across pseudotime.</p>
 </div>
 <div class="section level2">
 <h2 id="prerequisites">Prerequisites:<a class="anchor" aria-label="anchor" href="#prerequisites"></a>
 </h2>
 <p>R (≥ 4.2.0)</p>
-<p>Seurat object containing cluster metadata (RNA_snn_res.0.1) and a
-numeric pseudotime column</p>
-<p>Packages: miEdgeR, Seurat, igraph, clusterProfiler, org.Hs.eg.db,
-ggplot2, ggraph, flextable, pheatmap</p>
+<p>Seurat object containing cluster metadata (RNA_snn_res.0.1) and a numeric pseudotime column</p>
+<p>Packages: miEdgeR, Seurat, igraph, clusterProfiler, org.Hs.eg.db, ggplot2, ggraph, flextable, pheatmap</p>
 </div>
 <div class="section level2">
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
-<p>We extend the MI-network workflow by leveraging single-cell
-pseudotime. After generating a pseudotime vector, we bin cells into
-discrete stages, compute MI networks in each bin, and then analyze how
-community structure, hub genes, and functional enrichment evolve along
-the trajectory.</p>
+<p>We extend the MI-network workflow by leveraging single-cell pseudotime. After generating a pseudotime vector, we bin cells into discrete stages, compute MI networks in each bin, and then analyze how community structure, hub genes, and functional enrichment evolve along the trajectory.</p>
+<pre><code>Note: This vignette requires the PBMC 3K dataset originally provided by the Seurat team. Please download the file pbmc3k.rds and place it in your working directory before running the code chunks.</code></pre>
 </div>
 <div class="section level2">
 <h2 id="load-libraries-and-data">Load Libraries and Data<a class="anchor" aria-label="anchor" href="#load-libraries-and-data"></a>
 </h2>
-<p>Load all dependencies and read the preprocessed Seurat object. Ensure
-your object includes clustering and pseudotime metadata.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>Load all dependencies and read the preprocessed Seurat object. Ensure your object includes clustering and pseudotime metadata.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://iichelhadi.github.io/miEdgeR/">miEdgeR</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://igraph.org" class="external-link">igraph</a></span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r.igraph.org/" class="external-link">igraph</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yulab-smu.top/biomedical-knowledge-mining-book/" class="external-link">clusterProfiler</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">org.Hs.eg.db</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
@@ -103,9 +95,8 @@ your object includes clustering and pseudotime metadata.</p>
 <div class="section level2">
 <h2 id="generate-or-verify-pseudotime">Generate or Verify Pseudotime<a class="anchor" aria-label="anchor" href="#generate-or-verify-pseudotime"></a>
 </h2>
-<p>Here we generate a <strong>mock</strong> pseudotime for cluster 1 and
-plot its distribution.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<p>Here we generate a <strong>mock</strong> pseudotime for cluster 1 and plot its distribution.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="va">cluster_1_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span><span class="op">[</span><span class="va">seurat_obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">RNA_snn_res.0.1</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">]</span></span>
 <span><span class="va">mock_pseudotime</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span><span class="op">)</span></span>
@@ -138,10 +129,8 @@ plot its distribution.</p>
 <div class="section level2">
 <h2 id="compute-pseudotime-mi-networks">Compute Pseudotime MI Networks<a class="anchor" aria-label="anchor" href="#compute-pseudotime-mi-networks"></a>
 </h2>
-<p>For each pseudotime bin <strong>(3 bins)</strong>, we extract cells,
-filter top variable genes, compute MI in parallel, and build thresholded
-igraph objects.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>For each pseudotime bin <strong>(3 bins)</strong>, we extract cells, filter top variable genes, compute MI in parallel, and build thresholded igraph objects.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pt_results</span> <span class="op">&lt;-</span> <span class="fu">miEdgeR</span><span class="fu">::</span><span class="fu"><a href="../reference/compute_pseudotime_mi_network.html">compute_pseudotime_mi_network</a></span><span class="op">(</span></span>
 <span>  <span class="va">seurat_obj</span>,</span>
 <span>  cluster_id <span class="op">=</span> <span class="st">"1"</span>,</span>
@@ -156,47 +145,43 @@ igraph objects.</p>
 <span>  n_bins <span class="op">=</span> <span class="fl">3</span>, <span class="co">## set the number of pseudotime bins</span></span>
 <span>  n_cores <span class="op">=</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span><span class="op">)</span> <span class="op">-</span> <span class="fl">5</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Using adaptive nbins = 5 </span></span>
-<span><span class="co">## Using adaptive nbins = 5 </span></span>
-<span><span class="co">## Using adaptive nbins = 5</span></span></code></pre>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## Using adaptive nbins = 5</span></span></code></pre>
+<pre><code><span><span class="co">## Using adaptive nbins = 5</span></span></code></pre>
+<pre><code><span><span class="co">## Using adaptive nbins = 5</span></span></code></pre>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Valid bins:"</span>, <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">pt_results</span>, <span class="va">is.null</span><span class="op">)</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Valid bins: 3</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="summarize-bin-graphs">Summarize Bin Graphs<a class="anchor" aria-label="anchor" href="#summarize-bin-graphs"></a>
 </h2>
-<p>Quick summary of node and edge counts and density per bin to assess
-network complexity over pseudotime.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<p>Quick summary of node and edge counts and density per bin to assess network complexity over pseudotime.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">for</span> <span class="op">(</span><span class="va">bin</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Vertices:"</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/gorder.html" class="external-link">vcount</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Edges:"</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/gsize.html" class="external-link">ecount</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
-<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Density:"</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/edge_density.html" class="external-link">graph.density</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Vertices:"</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/gorder.html" class="external-link">vcount</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Edges:"</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/gsize.html" class="external-link">ecount</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Density:"</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/graph.density.html" class="external-link">graph.density</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="st">"\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Bin"</span>, <span class="va">bin</span>, <span class="st">"- Skipped (insufficient cells)\n"</span><span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <pre><code><span><span class="co">## Bin PT1 - Vertices: 2911 </span></span>
-<span><span class="co">## Bin PT1 - Edges: 211806 </span></span>
-<span><span class="co">## Bin PT1 - Density: 0.05000726 </span></span>
+<span><span class="co">## Bin PT1 - Edges: 211806</span></span></code></pre>
+<pre><code><span><span class="co">## Bin PT1 - Density: 0.05000726 </span></span>
 <span><span class="co">## Bin PT2 - Vertices: 2911 </span></span>
 <span><span class="co">## Bin PT2 - Edges: 211825 </span></span>
 <span><span class="co">## Bin PT2 - Density: 0.05001175 </span></span>
 <span><span class="co">## Bin PT3 - Vertices: 2911 </span></span>
 <span><span class="co">## Bin PT3 - Edges: 211818 </span></span>
 <span><span class="co">## Bin PT3 - Density: 0.05001009</span></span></code></pre>
-<p>All bins yielded valid networks with consistent structure (2911
-genes, ~211K edges, density ≈ 0.05), indicating stable co-regulatory
-patterns across pseudotime stages in Cluster 1.</p>
+<p>All bins yielded valid networks with consistent structure (2911 genes, ~211K edges, density ≈ 0.05), indicating stable co-regulatory patterns across pseudotime stages in Cluster 1.</p>
 </div>
 <div class="section level2">
 <h2 id="community-detection">Community Detection<a class="anchor" aria-label="anchor" href="#community-detection"></a>
 </h2>
-<p>Detect robust gene modules per bin by percolation (noise filtering)
-followed by Leiden clustering and neighborhood-overlap expansion.</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<p>Detect robust gene modules per bin by percolation (noise filtering) followed by Leiden clustering and neighborhood-overlap expansion.</p>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">comm_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/detect_communities_across_bins.html">detect_communities_across_bins</a></span><span class="op">(</span></span>
 <span>  <span class="va">pt_results</span>,</span>
 <span>  min_size <span class="op">=</span> <span class="fl">50</span>,</span>
@@ -208,24 +193,18 @@ followed by Leiden clustering and neighborhood-overlap expansion.</p>
 <span>  overlap_threshold <span class="op">=</span> <span class="fl">0.1</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Bin PT1 - Communities (size &gt;= 50 ): 1 </span></span>
-<span><span class="co">## Sizes: 1017 </span></span>
+<span><span class="co">## Sizes: 1018 </span></span>
 <span><span class="co">## Bin PT2 - Communities (size &gt;= 50 ): 2 </span></span>
-<span><span class="co">## Sizes: 957 590 </span></span>
+<span><span class="co">## Sizes: 957 552 </span></span>
 <span><span class="co">## Bin PT3 - Communities (size &gt;= 50 ): 2 </span></span>
-<span><span class="co">## Sizes: 970 694</span></span></code></pre>
-<p>We applied <code><a href="../reference/detect_communities_across_bins.html">detect_communities_across_bins()</a></code> to identify
-stable gene communities across pseudotime bins. Each bin’s consensus MI
-network revealed large co-expression modules, with Bin PT1 showing one
-major community (size: 1017), while Bins PT2 and PT3 displayed two
-communities each (sizes: 957/590 and 970/694, respectively). This
-suggests dynamic reorganization of gene modules during pseudotime
-progression in Cluster 1.</p>
+<span><span class="co">## Sizes: 970 659</span></span></code></pre>
+<p>We applied <code><a href="../reference/detect_communities_across_bins.html">detect_communities_across_bins()</a></code> to identify stable gene communities across pseudotime bins. Each bin’s consensus MI network revealed large co-expression modules, with Bin PT1 showing one major community (size: 1017), while Bins PT2 and PT3 displayed two communities each (sizes: 957/590 and 970/694, respectively). This suggests dynamic reorganization of gene modules during pseudotime progression in Cluster 1.</p>
 </div>
 <div class="section level2">
 <h2 id="community-sizes">Community Sizes<a class="anchor" aria-label="anchor" href="#community-sizes"></a>
 </h2>
 <p>Bar plot showing how module sizes vary across pseudotime bins.</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">comm_sizes_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">comm_results</span>, <span class="kw">function</span><span class="op">(</span><span class="va">res</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Bin <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">bin</span>, Community <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Group"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">sizes</span><span class="op">)</span><span class="op">)</span>, Size <span class="op">=</span> <span class="va">res</span><span class="op">$</span><span class="va">sizes</span><span class="op">)</span></span>
 <span><span class="op">}</span><span class="op">)</span><span class="op">)</span></span>
@@ -239,142 +218,140 @@ progression in Cluster 1.</p>
 <div class="section level2">
 <h2 id="go-enrichment">GO Enrichment<a class="anchor" aria-label="anchor" href="#go-enrichment"></a>
 </h2>
-<p>Perform enrichment for communities after filtering of housekeeping
-genes which tend to be over-represented due to their high mi-scores</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<p>Perform enrichment for communities after filtering of housekeeping genes which tend to be over-represented due to their high mi-scores</p>
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://yulab-smu.top/biomedical-knowledge-mining-book/" class="external-link">DOSE</a></span><span class="op">)</span></span>
 <span><span class="va">enrich_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/enrich_go.html">enrich_go</a></span><span class="op">(</span><span class="va">comm_results</span>,semantic_space <span class="op">=</span> <span class="st">'GO'</span>,ontology <span class="op">=</span> <span class="st">'BP'</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Community 1 in bin PT1 - Genes after filtering: 1017 </span></span>
+<pre><code><span><span class="co">## Community 1 in bin PT1 - Genes after filtering: 1018 </span></span>
 <span><span class="co">## Community 1 in bin PT2 - Genes after filtering: 957 </span></span>
-<span><span class="co">## Community 2 in bin PT2 - Genes after filtering: 590 </span></span>
+<span><span class="co">## Community 2 in bin PT2 - Genes after filtering: 552 </span></span>
 <span><span class="co">## Community 1 in bin PT3 - Genes after filtering: 970 </span></span>
-<span><span class="co">## Community 2 in bin PT3 - Genes after filtering: 694 </span></span>
+<span><span class="co">## Community 2 in bin PT3 - Genes after filtering: 659 </span></span>
 <span><span class="co">## Enrichment for PT1_Group_1 :</span></span>
 <span><span class="co">##                    ID                                            Description</span></span>
-<span><span class="co">## GO:0022904 GO:0022904                   respiratory electron transport chain</span></span>
 <span><span class="co">## GO:0042773 GO:0042773               ATP synthesis coupled electron transport</span></span>
 <span><span class="co">## GO:0042775 GO:0042775 mitochondrial ATP synthesis coupled electron transport</span></span>
-<span><span class="co">## GO:0046034 GO:0046034                                  ATP metabolic process</span></span>
+<span><span class="co">## GO:0019882 GO:0019882                    antigen processing and presentation</span></span>
+<span><span class="co">## GO:0042776 GO:0042776 proton motive force-driven mitochondrial ATP synthesis</span></span>
 <span><span class="co">##            GeneRatio   BgRatio       pvalue     p.adjust       qvalue</span></span>
-<span><span class="co">## GO:0022904    45/891 113/18800 3.031250e-30 7.886921e-27 5.938203e-27</span></span>
-<span><span class="co">## GO:0042773    41/891  92/18800 4.949950e-30 7.886921e-27 5.938203e-27</span></span>
-<span><span class="co">## GO:0042775    41/891  92/18800 4.949950e-30 7.886921e-27 5.938203e-27</span></span>
-<span><span class="co">## GO:0046034    59/891 273/18800 3.464913e-23 1.656228e-20 1.247004e-20</span></span>
-<span><span class="co">##                                                                                                                                                                                                                                                                                                                                                                                             geneID</span></span>
-<span><span class="co">## GO:0022904                                                                                    BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2L/COX7C/DGUOK/GHITM/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/PARK7/SDHB/SOD2/UQCR10/UQCRFS1/UQCRH/NDUFB4/NDUFC2/NDUFS6/CYCS/NDUFA3/SDHD/UQCRQ/ETFB/NDUFS8/NDUFA6/DNAJC15/NDUFS3/SCO2/NDUFA2/NDUFS2/SDHC/NDUFAB1</span></span>
-<span><span class="co">## GO:0042773                                                                                                        BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2L/COX7C/DGUOK/GHITM/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/PARK7/UQCR10/UQCRFS1/UQCRH/NDUFB4/NDUFC2/NDUFS6/CYCS/NDUFA3/SDHD/UQCRQ/NDUFS8/NDUFA6/DNAJC15/NDUFS3/NDUFA2/NDUFS2/SDHC/NDUFAB1</span></span>
-<span><span class="co">## GO:0042775                                                                                                        BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2L/COX7C/DGUOK/GHITM/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/PARK7/UQCR10/UQCRFS1/UQCRH/NDUFB4/NDUFC2/NDUFS6/CYCS/NDUFA3/SDHD/UQCRQ/NDUFS8/NDUFA6/DNAJC15/NDUFS3/NDUFA2/NDUFS2/SDHC/NDUFAB1</span></span>
-<span><span class="co">## GO:0046034 BID/CHCHD10/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2/COX7A2L/COX7C/DGUOK/EIF6/ENO1/FIS1/GHITM/HSPA8/ISCU/LDHA/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/PARK7/PGAM1/PGK1/PKM/RHOA/TGFB1/TPI1/TSPO/UQCR10/UQCRC1/UQCRFS1/UQCRH/NDUFB4/NDUFC2/NDUFS6/CYCS/NDUFA3/SDHD/UQCRQ/TREX1/UQCRC2/NDUFS8/NDUFA6/DNAJC15/NDUFS3/NDUFA2/NDUFS2/ALDOA/SDHC/NDUFAB1</span></span>
+<span><span class="co">## GO:0042773    48/899 102/18870 2.999120e-36 7.247374e-33 5.493125e-33</span></span>
+<span><span class="co">## GO:0042775    48/899 102/18870 2.999120e-36 7.247374e-33 5.493125e-33</span></span>
+<span><span class="co">## GO:0019882    38/899 116/18870 4.451448e-22 2.151385e-19 1.630636e-19</span></span>
+<span><span class="co">## GO:0042776    26/899  67/18870 1.247947e-17 4.308091e-15 3.265305e-15</span></span>
+<span><span class="co">##                                                                                                                                                                                                                                                                                                                                   geneID</span></span>
+<span><span class="co">## GO:0042773 BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX6B1/COX6C/COX7A2/COX7A2L/COX7C/COX8A/DGUOK/GHITM/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/PARK7/SDHB/UQCR10/UQCRC1/UQCRFS1/UQCRH/NDUFB4/NDUFC2/NDUFS6/CYCS/NDUFA3/SDHD/UQCRQ/UQCRC2/NDUFS8/NDUFA6/DNAJC15/NDUFS3/NDUFA2/NDUFS2/SDHC/NDUFAB1</span></span>
+<span><span class="co">## GO:0042775 BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX6B1/COX6C/COX7A2/COX7A2L/COX7C/COX8A/DGUOK/GHITM/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/PARK7/SDHB/UQCR10/UQCRC1/UQCRFS1/UQCRH/NDUFB4/NDUFC2/NDUFS6/CYCS/NDUFA3/SDHD/UQCRQ/UQCRC2/NDUFS8/NDUFA6/DNAJC15/NDUFS3/NDUFA2/NDUFS2/SDHC/NDUFAB1</span></span>
+<span><span class="co">## GO:0019882                                                                      B2M/CALR/CD68/CD74/CTSD/CTSH/CTSL/CTSS/FCER1G/FGL2/HLA-A/HLA-C/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/IFI30/LILRB2/PSMB8/PSME1/PYCARD/RAB10/TAP1/WAS/TREX1/PDIA3/RAB32/HLA-DMB/SLC11A1/HLA-DQA2/UNC93B1/HLA-F/HLA-B</span></span>
+<span><span class="co">## GO:0042776                                                                                                                                          NDUFA1/NDUFA11/NDUFA13/NDUFB1/NDUFB10/NDUFB11/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS5/NDUFS7/NDUFV2/SDHB/NDUFB4/NDUFC2/NDUFS6/NDUFA3/SDHD/NDUFS8/NDUFA6/NDUFS3/NDUFA2/NDUFS2/SDHC/NDUFAB1</span></span>
 <span><span class="co">##            Count</span></span>
-<span><span class="co">## GO:0022904    45</span></span>
-<span><span class="co">## GO:0042773    41</span></span>
-<span><span class="co">## GO:0042775    41</span></span>
-<span><span class="co">## GO:0046034    59</span></span>
+<span><span class="co">## GO:0042773    48</span></span>
+<span><span class="co">## GO:0042775    48</span></span>
+<span><span class="co">## GO:0019882    38</span></span>
+<span><span class="co">## GO:0042776    26</span></span>
 <span><span class="co">## Enrichment for PT2_Group_1 :</span></span>
-<span><span class="co">##                    ID                          Description GeneRatio   BgRatio</span></span>
-<span><span class="co">## GO:0022904 GO:0022904 respiratory electron transport chain    41/832 113/18800</span></span>
-<span><span class="co">## GO:0019882 GO:0019882  antigen processing and presentation    36/832 107/18800</span></span>
-<span><span class="co">## GO:0046034 GO:0046034                ATP metabolic process    56/832 273/18800</span></span>
-<span><span class="co">## GO:0002396 GO:0002396         MHC protein complex assembly    14/832  20/18800</span></span>
-<span><span class="co">##                  pvalue     p.adjust       qvalue</span></span>
-<span><span class="co">## GO:0022904 6.164300e-27 2.928659e-23 2.186704e-23</span></span>
-<span><span class="co">## GO:0019882 1.673296e-22 8.833145e-20 6.595331e-20</span></span>
-<span><span class="co">## GO:0046034 2.487528e-22 1.181825e-19 8.824180e-20</span></span>
-<span><span class="co">## GO:0002396 3.007261e-15 7.143747e-13 5.333931e-13</span></span>
-<span><span class="co">##                                                                                                                                                                                                                                                                                                                                                                      geneID</span></span>
-<span><span class="co">## GO:0022904                                                                                          BID/CHCHD2/COX5A/COX5B/COX6A1/COX7A2L/COX7C/DGUOK/GHITM/ISCU/NDUFA2/NDUFA4/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS3/NDUFS5/NDUFS7/NDUFV2/PARK7/SDHB/SDHD/SOD2/UQCR10/UQCRFS1/UQCRH/UQCRQ/NDUFS8/NDUFA1/NDUFB4/NDUFA3/COX4I1/SCO2/NDUFA12/ETFB/CYC1/NDUFC2/SDHC/NDUFS6</span></span>
-<span><span class="co">## GO:0019882                                                                                                                      CALR/CD68/CD74/CTSD/CTSH/HLA-A/HLA-B/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/HLA-F/IFI30/PDIA3/PSMB8/PSME1/PYCARD/TAPBP/WAS/FGL2/HLA-DMB/HLA-DQA2/SLC11A1/RAB10/CTSS/FCER1G/HLA-C/LILRB2/B2M/TREX1/CTSL</span></span>
-<span><span class="co">## GO:0046034 ALDOA/BID/CHCHD2/COX5A/COX5B/COX6A1/COX7A2/COX7A2L/COX7C/DGUOK/ENO1/FIS1/GHITM/HSPA8/ISCU/LDHA/NDUFA2/NDUFA4/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS3/NDUFS5/NDUFS7/NDUFV2/PARK7/PGAM1/PGK1/PKM/RHOA/SDHD/TGFB1/TPI1/UQCR10/UQCRC1/UQCRFS1/UQCRH/UQCRQ/CHCHD10/EIF6/NDUFS8/NDUFA1/NDUFB4/NDUFA3/NCOR1/COX4I1/NDUFA12/UQCRC2/CYC1/NDUFC2/SDHC/NDUFS6/TSPO/TREX1</span></span>
-<span><span class="co">## GO:0002396                                                                                                                                                                                                                                                      CALR/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/PDIA3/TAPBP/HLA-DMB/HLA-DQA2/B2M</span></span>
+<span><span class="co">##                    ID                                            Description</span></span>
+<span><span class="co">## GO:0042773 GO:0042773               ATP synthesis coupled electron transport</span></span>
+<span><span class="co">## GO:0042775 GO:0042775 mitochondrial ATP synthesis coupled electron transport</span></span>
+<span><span class="co">## GO:0019882 GO:0019882                    antigen processing and presentation</span></span>
+<span><span class="co">## GO:0002396 GO:0002396                           MHC protein complex assembly</span></span>
+<span><span class="co">##            GeneRatio   BgRatio       pvalue     p.adjust       qvalue</span></span>
+<span><span class="co">## GO:0042773    44/838 102/18870 1.370982e-32 3.289672e-29 2.445400e-29</span></span>
+<span><span class="co">## GO:0042775    44/838 102/18870 1.370982e-32 3.289672e-29 2.445400e-29</span></span>
+<span><span class="co">## GO:0019882    37/838 116/18870 4.069213e-22 1.952815e-19 1.451638e-19</span></span>
+<span><span class="co">## GO:0002396    14/838  20/18870 3.156484e-15 8.415536e-13 6.255744e-13</span></span>
+<span><span class="co">##                                                                                                                                                                                                                                                                                                      geneID</span></span>
+<span><span class="co">## GO:0042773 BID/CHCHD2/COX5A/COX5B/COX6A1/COX6B1/COX6C/COX7A2/COX7A2L/COX7C/COX8A/DGUOK/GHITM/ISCU/NDUFA2/NDUFA4/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS3/NDUFS5/NDUFS7/NDUFV2/PARK7/SDHB/SDHD/UQCR10/UQCRC1/UQCRFS1/UQCRH/UQCRQ/NDUFS8/NDUFA1/NDUFB4/NDUFA3/COX4I1/NDUFA12/UQCRC2/CYC1/NDUFC2/SDHC/NDUFS6</span></span>
+<span><span class="co">## GO:0042775 BID/CHCHD2/COX5A/COX5B/COX6A1/COX6B1/COX6C/COX7A2/COX7A2L/COX7C/COX8A/DGUOK/GHITM/ISCU/NDUFA2/NDUFA4/NDUFB10/NDUFB2/NDUFB5/NDUFB7/NDUFB9/NDUFS3/NDUFS5/NDUFS7/NDUFV2/PARK7/SDHB/SDHD/UQCR10/UQCRC1/UQCRFS1/UQCRH/UQCRQ/NDUFS8/NDUFA1/NDUFB4/NDUFA3/COX4I1/NDUFA12/UQCRC2/CYC1/NDUFC2/SDHC/NDUFS6</span></span>
+<span><span class="co">## GO:0019882                                              CALR/CD68/CD74/CTSD/CTSH/HLA-A/HLA-B/HLA-C/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/HLA-F/IFI30/PDIA3/PSMB8/PSME1/PYCARD/TAPBP/WAS/UNC93B1/FGL2/HLA-DMB/HLA-DQA2/SLC11A1/RAB10/CTSS/FCER1G/LILRB2/B2M/TREX1/CTSL</span></span>
+<span><span class="co">## GO:0002396                                                                                                                                                                                      CALR/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/PDIA3/TAPBP/HLA-DMB/HLA-DQA2/B2M</span></span>
 <span><span class="co">##            Count</span></span>
-<span><span class="co">## GO:0022904    41</span></span>
-<span><span class="co">## GO:0019882    36</span></span>
-<span><span class="co">## GO:0046034    56</span></span>
+<span><span class="co">## GO:0042773    44</span></span>
+<span><span class="co">## GO:0042775    44</span></span>
+<span><span class="co">## GO:0019882    37</span></span>
 <span><span class="co">## GO:0002396    14</span></span>
 <span><span class="co">## Enrichment for PT2_Group_2 :</span></span>
-<span><span class="co">##                    ID                         Description GeneRatio   BgRatio</span></span>
-<span><span class="co">## GO:0019882 GO:0019882 antigen processing and presentation    33/525 107/18800</span></span>
-<span><span class="co">## GO:0045333 GO:0045333                cellular respiration    35/525 231/18800</span></span>
-<span><span class="co">## GO:0050863 GO:0050863     regulation of T cell activation    40/525 342/18800</span></span>
-<span><span class="co">## GO:0002396 GO:0002396        MHC protein complex assembly    12/525  20/18800</span></span>
-<span><span class="co">##                  pvalue     p.adjust       qvalue</span></span>
-<span><span class="co">## GO:0019882 1.217336e-25 4.959429e-22 3.851909e-22</span></span>
-<span><span class="co">## GO:0045333 2.873605e-16 1.463383e-13 1.136586e-13</span></span>
-<span><span class="co">## GO:0050863 1.763186e-14 6.400725e-12 4.971341e-12</span></span>
-<span><span class="co">## GO:0002396 2.042450e-14 6.400725e-12 4.971341e-12</span></span>
-<span><span class="co">##                                                                                                                                                                                                                                                                                  geneID</span></span>
-<span><span class="co">## GO:0019882                                                  CTSS/FCER1G/HLA-C/LILRB2/B2M/TREX1/CTSL/CD74/CTSD/CTSH/HLA-A/HLA-B/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/HLA-F/IFI30/PDIA3/PSMB8/PSME1/PYCARD/WAS/FGL2/HLA-DMB/HLA-DQA2/SLC11A1/RAB10</span></span>
-<span><span class="co">## GO:0045333                                                  TREX1/MDH2/MDH1/IDH2/ISCU/NDUFB10/NDUFB2/NDUFB5/NDUFB9/OXA1L/PARK7/PRELID1/RHOA/SDHB/SDHD/SOD2/UQCR10/UQCRC1/UQCRFS1/UQCRH/UQCRQ/CHCHD10/CAT/NDUFS8/NDUFA1/NDUFB4/COX4I1/SUCLG1/SCO2/NDUFA12/UQCRC2/CYC1/NDUFC2/SDHC/NDUFS6</span></span>
-<span><span class="co">## GO:0050863 AIF1/LILRB1/LILRB2/SPN/B2M/LGALS1/TREX1/ADA/RUNX3/CD74/CEBPB/CORO1A/HLA-A/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/LGALS3/LGALS9/LYN/NFKBIZ/PRELID1/PTPN6/PTPRC/PYCARD/RAC2/RHOA/SOD1/TNFRSF1B/TNFSF13B/IRF1/FGL2/CD300A/HLA-DMB/HLA-DQA2</span></span>
-<span><span class="co">## GO:0002396                                                                                                                                                                             B2M/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/PDIA3/HLA-DMB/HLA-DQA2</span></span>
+<span><span class="co">##                    ID                                       Description</span></span>
+<span><span class="co">## GO:0019882 GO:0019882               antigen processing and presentation</span></span>
+<span><span class="co">## GO:0045333 GO:0045333                              cellular respiration</span></span>
+<span><span class="co">## GO:0002396 GO:0002396                      MHC protein complex assembly</span></span>
+<span><span class="co">## GO:0002501 GO:0002501 peptide antigen assembly with MHC protein complex</span></span>
+<span><span class="co">##            GeneRatio   BgRatio       pvalue     p.adjust       qvalue</span></span>
+<span><span class="co">## GO:0019882    33/494 116/18870 2.871758e-25 1.165646e-21 9.101960e-22</span></span>
+<span><span class="co">## GO:0045333    36/494 243/18870 2.880842e-17 1.461667e-14 1.141344e-14</span></span>
+<span><span class="co">## GO:0002396    12/494  20/18870 9.458936e-15 3.490347e-12 2.725441e-12</span></span>
+<span><span class="co">## GO:0002501    12/494  20/18870 9.458936e-15 3.490347e-12 2.725441e-12</span></span>
+<span><span class="co">##                                                                                                                                                                                                                                            geneID</span></span>
+<span><span class="co">## GO:0019882            CTSS/FCER1G/LILRB2/B2M/TREX1/CTSL/CD74/CTSD/CTSH/HLA-A/HLA-B/HLA-C/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/HLA-F/IFI30/PDIA3/PSMB8/PSME1/PYCARD/WAS/FGL2/HLA-DMB/HLA-DQA2/SLC11A1/RAB10</span></span>
+<span><span class="co">## GO:0045333 TREX1/MDH2/MDH1/IDH2/ISCU/NDUFA11/NDUFB10/NDUFB11/NDUFB5/NDUFB9/OXA1L/PARK7/PRELID1/RHOA/SDHB/SDHD/SOD2/UQCR10/UQCRC1/UQCRFS1/UQCRH/UQCRQ/CHCHD10/CAT/NDUFS8/CHCHD5/NDUFA1/NDUFB4/COX4I1/SUCLG1/SCO2/NDUFA12/UQCRC2/NDUFC2/SDHC/NDUFS6</span></span>
+<span><span class="co">## GO:0002396                                                                                                                                       B2M/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/PDIA3/HLA-DMB/HLA-DQA2</span></span>
+<span><span class="co">## GO:0002501                                                                                                                                       B2M/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/PDIA3/HLA-DMB/HLA-DQA2</span></span>
 <span><span class="co">##            Count</span></span>
 <span><span class="co">## GO:0019882    33</span></span>
-<span><span class="co">## GO:0045333    35</span></span>
-<span><span class="co">## GO:0050863    40</span></span>
+<span><span class="co">## GO:0045333    36</span></span>
 <span><span class="co">## GO:0002396    12</span></span>
+<span><span class="co">## GO:0002501    12</span></span>
 <span><span class="co">## Enrichment for PT3_Group_1 :</span></span>
 <span><span class="co">##                    ID                                            Description</span></span>
 <span><span class="co">## GO:0042773 GO:0042773               ATP synthesis coupled electron transport</span></span>
 <span><span class="co">## GO:0042775 GO:0042775 mitochondrial ATP synthesis coupled electron transport</span></span>
 <span><span class="co">## GO:0019882 GO:0019882                    antigen processing and presentation</span></span>
-<span><span class="co">## GO:0046034 GO:0046034                                  ATP metabolic process</span></span>
+<span><span class="co">## GO:0016032 GO:0016032                                          viral process</span></span>
 <span><span class="co">##            GeneRatio   BgRatio       pvalue     p.adjust       qvalue</span></span>
-<span><span class="co">## GO:0042773    39/847  92/18800 1.962503e-28 4.733558e-25 3.503585e-25</span></span>
-<span><span class="co">## GO:0042775    39/847  92/18800 1.962503e-28 4.733558e-25 3.503585e-25</span></span>
-<span><span class="co">## GO:0019882    36/847 107/18800 3.047327e-22 1.633367e-19 1.208951e-19</span></span>
-<span><span class="co">## GO:0046034    56/847 273/18800 5.858412e-22 2.826098e-19 2.091762e-19</span></span>
-<span><span class="co">##                                                                                                                                                                                                                                                                                                                                                                       geneID</span></span>
-<span><span class="co">## GO:0042773                                                                                                   BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2L/COX7C/CYC1/CYCS/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/UQCR10/UQCRFS1/UQCRH/NDUFA3/NDUFAB1/NDUFS6/SDHC/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/NDUFA2/NDUFS8/NDUFB5/NDUFS2</span></span>
-<span><span class="co">## GO:0042775                                                                                                   BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2L/COX7C/CYC1/CYCS/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/UQCR10/UQCRFS1/UQCRH/NDUFA3/NDUFAB1/NDUFS6/SDHC/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/NDUFA2/NDUFS8/NDUFB5/NDUFS2</span></span>
-<span><span class="co">## GO:0019882                                                                                                                        CD68/CD74/CTSD/CTSH/FGL2/HLA-A/HLA-C/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQA2/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/HLA-F/IFI30/LILRB2/PSMB8/PSME1/PYCARD/RAB10/RAB32/SLC11A1/WAS/HLA-B/HLA-DMB/CALR/PDIA3/TAP1/CTSS/FCER1G/B2M/CTSL</span></span>
-<span><span class="co">## GO:0046034 ALDOA/BID/CHCHD10/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX7A2/COX7A2L/COX7C/CYC1/CYCS/ENO1/FIS1/HSPA8/ISCU/LDHA/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/PGAM1/PGK1/PKM/RHOA/TPI1/UQCR10/UQCRC2/UQCRFS1/UQCRH/NDUFA3/NDUFAB1/TGFB1/NDUFS6/SDHC/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/UQCRC1/NCOR1/NDUFA2/NDUFS8/NDUFB5/NDUFS2/TSPO</span></span>
+<span><span class="co">## GO:0042773    46/853 102/18870 9.386109e-35 2.274254e-31 1.695922e-31</span></span>
+<span><span class="co">## GO:0042775    46/853 102/18870 9.386109e-35 2.274254e-31 1.695922e-31</span></span>
+<span><span class="co">## GO:0019882    36/853 116/18870 7.614100e-21 3.689793e-18 2.751495e-18</span></span>
+<span><span class="co">## GO:0016032    66/853 432/18870 2.279391e-18 9.204940e-16 6.864165e-16</span></span>
+<span><span class="co">##                                                                                                                                                                                                                                                                                                                                                                                                                       geneID</span></span>
+<span><span class="co">## GO:0042773                                                                                                      BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX6B1/COX6C/COX7A2/COX7A2L/COX7C/COX8A/CYC1/CYCS/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/UQCR10/UQCRC2/UQCRFS1/UQCRH/SDHB/NDUFA3/NDUFAB1/NDUFS6/SDHC/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/UQCRC1/NDUFA2/NDUFS8/NDUFB5/NDUFS2</span></span>
+<span><span class="co">## GO:0042775                                                                                                      BID/CHCHD2/COX4I1/COX5A/COX5B/COX6A1/COX6B1/COX6C/COX7A2/COX7A2L/COX7C/COX8A/CYC1/CYCS/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/UQCR10/UQCRC2/UQCRFS1/UQCRH/SDHB/NDUFA3/NDUFAB1/NDUFS6/SDHC/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/UQCRC1/NDUFA2/NDUFS8/NDUFB5/NDUFS2</span></span>
+<span><span class="co">## GO:0019882                                                                                                                                                                        CD68/CD74/CTSD/CTSH/FGL2/HLA-A/HLA-C/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQA2/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/HLA-F/IFI30/LILRB2/PSMB8/PSME1/PYCARD/RAB10/RAB32/SLC11A1/WAS/HLA-B/HLA-DMB/CALR/PDIA3/TAP1/CTSS/FCER1G/B2M/CTSL</span></span>
+<span><span class="co">## GO:0016032 APOBEC3A/BSG/BST2/CD4/CD55/CD74/CFL1/CHMP1B/CHMP2A/CHMP4A/CSNK2B/CTSB/CXCR4/DDX5/DEK/DYNLT1/EIF3D/EIF3F/EIF3G/EIF3L/HLA-DRB1/HMGB1/HSP90AB1/HSPA8/ISG15/JUN/LAMTOR5/LGALS9/PABPC1/PCBP1/PCBP2/PPIA/PPIB/RAB7A/RAN/SNX3/TNFRSF14/TRIM22/VAMP8/VAPA/VPS28/ZFP36/APOBEC3B/OAS1/IRF7/EEF1A1/SMARCB1/PLSCR1/MX1/CHMP5/P4HB/SPCS1/CSDE1/CHMP4B/IFIT1/BANF1/SELPLG/FCN1/IFITM2/IFITM3/LGALS1/LY6E/IFITM1/CCL3/CSF1R/CTSL</span></span>
 <span><span class="co">##            Count</span></span>
-<span><span class="co">## GO:0042773    39</span></span>
-<span><span class="co">## GO:0042775    39</span></span>
+<span><span class="co">## GO:0042773    46</span></span>
+<span><span class="co">## GO:0042775    46</span></span>
 <span><span class="co">## GO:0019882    36</span></span>
-<span><span class="co">## GO:0046034    56</span></span>
+<span><span class="co">## GO:0016032    66</span></span>
 <span><span class="co">## Enrichment for PT3_Group_2 :</span></span>
-<span><span class="co">##                    ID                                      Description</span></span>
-<span><span class="co">## GO:0019882 GO:0019882              antigen processing and presentation</span></span>
-<span><span class="co">## GO:0022904 GO:0022904             respiratory electron transport chain</span></span>
-<span><span class="co">## GO:0046034 GO:0046034                            ATP metabolic process</span></span>
-<span><span class="co">## GO:0033108 GO:0033108 mitochondrial respiratory chain complex assembly</span></span>
+<span><span class="co">##                    ID                                            Description</span></span>
+<span><span class="co">## GO:0019882 GO:0019882                    antigen processing and presentation</span></span>
+<span><span class="co">## GO:0042773 GO:0042773               ATP synthesis coupled electron transport</span></span>
+<span><span class="co">## GO:0042775 GO:0042775 mitochondrial ATP synthesis coupled electron transport</span></span>
+<span><span class="co">## GO:0042776 GO:0042776 proton motive force-driven mitochondrial ATP synthesis</span></span>
 <span><span class="co">##            GeneRatio   BgRatio       pvalue     p.adjust       qvalue</span></span>
-<span><span class="co">## GO:0019882    34/616 107/18800 1.354942e-24 6.066077e-21 4.622493e-21</span></span>
-<span><span class="co">## GO:0022904    32/616 113/18800 1.720275e-21 2.567224e-18 1.956285e-18</span></span>
-<span><span class="co">## GO:0046034    42/616 273/18800 5.208031e-17 1.457272e-14 1.110475e-14</span></span>
-<span><span class="co">## GO:0033108    25/616  94/18800 2.341378e-16 5.823528e-14 4.437664e-14</span></span>
-<span><span class="co">##                                                                                                                                                                                                                                                                             geneID</span></span>
-<span><span class="co">## GO:0019882                                         CTSS/FCER1G/B2M/CTSL/CD74/CTSD/CTSH/FGL2/HLA-A/HLA-C/HLA-DMA/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQA2/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/IFI30/LILRB2/PSMB8/PSME1/PYCARD/RAB10/RAB32/SLC11A1/WAS/HLA-B/HLA-DMB/CALR/PDIA3/TAP1</span></span>
-<span><span class="co">## GO:0022904                                                          BID/COX4I1/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/SOD2/UQCR10/UQCRFS1/UQCRH/SDHB/NDUFA3/NDUFAB1/SDHC/NDUFV2/UQCRQ/DGUOK/SCO2/GHITM/NDUFB7/SDHD/NDUFA2/NDUFS8/NDUFS2</span></span>
-<span><span class="co">## GO:0046034 TSPO/BID/COX4I1/FIS1/HSPA8/ISCU/LDHA/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/PGAM1/PGK1/PKM/RHOA/TPI1/UQCR10/UQCRC2/UQCRFS1/UQCRH/NDUFA3/NDUFAB1/TGFB1/SDHC/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/UQCRC1/NCOR1/NDUFA2/NDUFS8/NDUFS2</span></span>
-<span><span class="co">## GO:0033108                                                                                        COX14/NDUFA1/NDUFA11/NDUFA13/NDUFB1/NDUFB10/NDUFB11/NDUFB2/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/UQCRFS1/NDUFA3/NDUFAB1/COX17/SCO2/NDUFB7/NDUFAF3/NDUFA2/NDUFS8/OXA1L/NDUFS2/PET100</span></span>
+<span><span class="co">## GO:0019882    32/592 116/18870 1.128425e-21 4.039534e-18 3.132397e-18</span></span>
+<span><span class="co">## GO:0042773    30/592 102/18870 2.739286e-21 4.039534e-18 3.132397e-18</span></span>
+<span><span class="co">## GO:0042775    30/592 102/18870 2.739286e-21 4.039534e-18 3.132397e-18</span></span>
+<span><span class="co">## GO:0042776    20/592  67/18870 9.104863e-15 2.237773e-12 1.735248e-12</span></span>
+<span><span class="co">##                                                                                                                                                                                                                        geneID</span></span>
+<span><span class="co">## GO:0019882 CTSS/FCER1G/B2M/CTSL/CTSD/CTSH/FGL2/HLA-A/HLA-C/HLA-DPA1/HLA-DPB1/HLA-DQA1/HLA-DQA2/HLA-DQB1/HLA-DRA/HLA-DRB1/HLA-DRB5/HLA-E/IFI30/LILRB2/PSMB8/PSME1/PYCARD/RAB10/RAB32/SLC11A1/WAS/HLA-B/HLA-DMB/CALR/PDIA3/TAP1</span></span>
+<span><span class="co">## GO:0042773             BID/COX4I1/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/UQCR10/UQCRC2/UQCRFS1/UQCRH/SDHB/NDUFA3/NDUFAB1/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/UQCRC1/NDUFA2/NDUFS8/NDUFS2</span></span>
+<span><span class="co">## GO:0042775             BID/COX4I1/ISCU/NDUFA1/NDUFA4/NDUFB1/NDUFB10/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/PARK7/UQCR10/UQCRC2/UQCRFS1/UQCRH/SDHB/NDUFA3/NDUFAB1/NDUFV2/UQCRQ/DGUOK/GHITM/NDUFB7/SDHD/UQCRC1/NDUFA2/NDUFS8/NDUFS2</span></span>
+<span><span class="co">## GO:0042776                                                                       NDUFA1/NDUFA11/NDUFA13/NDUFB1/NDUFB10/NDUFB11/NDUFB4/NDUFB9/NDUFC2/NDUFS5/NDUFS7/SDHB/NDUFA3/NDUFAB1/NDUFV2/NDUFB7/SDHD/NDUFA2/NDUFS8/NDUFS2</span></span>
 <span><span class="co">##            Count</span></span>
-<span><span class="co">## GO:0019882    34</span></span>
-<span><span class="co">## GO:0022904    32</span></span>
-<span><span class="co">## GO:0046034    42</span></span>
-<span><span class="co">## GO:0033108    25</span></span></code></pre>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<span><span class="co">## GO:0019882    32</span></span>
+<span><span class="co">## GO:0042773    30</span></span>
+<span><span class="co">## GO:0042775    30</span></span>
+<span><span class="co">## GO:0042776    20</span></span></code></pre>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Plot the top 4 terms per community</span></span>
 <span><span class="va">dot_plot</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_go_terms.html">plot_go_terms</a></span><span class="op">(</span><span class="va">enrich_results</span>, top_n_terms <span class="op">=</span> <span class="fl">5</span>, ontology <span class="op">=</span> <span class="st">"BP"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">dot_plot</span><span class="op">)</span></span></code></pre></div>
 <p><img src="pseudotime_mi_network_files/figure-html/unnamed-chunk-8-1.png" alt="Dot plot of enriched terms" width="672"></p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">## Save Results</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="hub-gene-changes-across-pseudotime">Hub Gene Changes Across Pseudotime<a class="anchor" aria-label="anchor" href="#hub-gene-changes-across-pseudotime"></a>
 </h2>
-<p>Identify top hub genes in each module and tabulate their presence
-across bins.</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<p>Identify top hub genes in each module and tabulate their presence across bins.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">hub_changes</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/bind_rows.html" class="external-link">bind_rows</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">comm_results</span>, <span class="kw">function</span><span class="op">(</span><span class="va">res</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">bin</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">$</span><span class="va">bin</span></span>
 <span>  <span class="va">hub_data</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">communities</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">i</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">genes</span> <span class="op">&lt;-</span> <span class="va">res</span><span class="op">$</span><span class="va">communities</span><span class="op">[[</span><span class="va">i</span><span class="op">]</span><span class="op">]</span></span>
-<span>    <span class="va">subgraph</span> <span class="op">&lt;-</span> <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/subgraph.html" class="external-link">induced_subgraph</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span><span class="va">name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">genes</span><span class="op">]</span><span class="op">)</span></span>
-<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/gorder.html" class="external-link">vcount</a></span><span class="op">(</span><span class="va">subgraph</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span></span>
-<span>    <span class="va">deg</span> <span class="op">&lt;-</span> <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/igraph/man/degree.html" class="external-link">degree</a></span><span class="op">(</span><span class="va">subgraph</span><span class="op">)</span></span>
+<span>    <span class="va">subgraph</span> <span class="op">&lt;-</span> <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/subgraph.html" class="external-link">induced_subgraph</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span>, <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/V.html" class="external-link">V</a></span><span class="op">(</span><span class="va">pt_results</span><span class="op">[[</span><span class="va">bin</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">[</span><span class="va">name</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="va">genes</span><span class="op">]</span><span class="op">)</span></span>
+<span>    <span class="kw">if</span> <span class="op">(</span><span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/gorder.html" class="external-link">vcount</a></span><span class="op">(</span><span class="va">subgraph</span><span class="op">)</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="cn">NULL</span><span class="op">)</span></span>
+<span>    <span class="va">deg</span> <span class="op">&lt;-</span> <span class="fu">igraph</span><span class="fu">::</span><span class="fu"><a href="https://r.igraph.org/reference/degree.html" class="external-link">degree</a></span><span class="op">(</span><span class="va">subgraph</span><span class="op">)</span></span>
 <span>    <span class="va">top_hubs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="va">deg</span>, decreasing <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">deg</span><span class="op">)</span><span class="op">)</span><span class="op">]</span></span>
 <span>    <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>Bin <span class="op">=</span> <span class="va">bin</span>, Community <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"Group"</span>, <span class="va">i</span><span class="op">)</span>, Hub_Gene <span class="op">=</span> <span class="va">top_hubs</span>, stringsAsFactors <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span>  <span class="op">}</span><span class="op">)</span></span>
@@ -392,88 +369,93 @@ across bins.</p>
 <span>  <span class="fu">flextable</span><span class="fu">::</span><span class="fu"><a href="https://davidgohel.github.io/flextable/reference/theme_vanilla.html" class="external-link">theme_vanilla</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">ft_hub</span></span></code></pre></div>
 <div class="tabwid">
-<style>.cl-9041b93e{}.cl-90378586{font-family:'DejaVu Sans';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-9037859a{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-903df1c8{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-903e0ec4{width:1.073in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0ece{width:2.087in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0ed8{width:1.611in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0ed9{width:1.073in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0ee2{width:2.087in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0eec{width:1.611in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0eed{width:1.073in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0ef6{width:2.087in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0f00{width:1.611in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0f0a{width:1.073in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0f0b{width:2.087in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-903e0f0c{width:1.611in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style>
-<table data-quarto-disable-processing="true" class="table cl-9041b93e">
+<style>.cl-c8f1eb32{}.cl-c8ecf370{font-family:'DejaVu Sans';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-c8ecf38e{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-c8ef1e2a{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-c8ef32e8{width:1.073in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef32f2{width:2.087in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef32f3{width:1.611in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef32fc{width:1.073in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef3306{width:2.087in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef3307{width:1.611in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef3310{width:1.073in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef3311{width:2.087in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef331a{width:1.611in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef331b{width:1.073in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef3324{width:2.087in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c8ef3325{width:1.611in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style>
+<table data-quarto-disable-processing="true" class="table cl-c8f1eb32">
 <thead><tr style="overflow-wrap:break-word;">
-<th class="cl-903e0ec4"><p class="cl-903df1c8"><span class="cl-90378586">Hub Gene</span></p></th>
-<th class="cl-903e0ece"><p class="cl-903df1c8"><span class="cl-90378586">Bins Present</span></p></th>
-<th class="cl-903e0ed8"><p class="cl-903df1c8"><span class="cl-90378586">Communities</span></p></th>
+<th class="cl-c8ef32e8"><p class="cl-c8ef1e2a"><span class="cl-c8ecf370">Hub Gene</span></p></th>
+<th class="cl-c8ef32f2"><p class="cl-c8ef1e2a"><span class="cl-c8ecf370">Bins Present</span></p></th>
+<th class="cl-c8ef32f3"><p class="cl-c8ef1e2a"><span class="cl-c8ecf370">Communities</span></p></th>
 </tr></thead>
 <tbody>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0ed9"><p class="cl-903df1c8"><span class="cl-9037859a">CAPZB</span></p></td>
-<td class="cl-903e0ee2"><p class="cl-903df1c8"><span class="cl-9037859a">PT1</span></p></td>
-<td class="cl-903e0eec"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1</span></p></td>
+<td class="cl-c8ef32fc"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">CAPZB</span></p></td>
+<td class="cl-c8ef3306"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT1</span></p></td>
+<td class="cl-c8ef3307"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">HIGD2A</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT3, PT3</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">HIGD2A</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">HLA-DPA1</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT3, PT3</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">HLA-DPA1</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT3, PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1, Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">HLA-DRB5</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT1, PT2</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">HLA-DRB5</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT1, PT2</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1, Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">ITGB2</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT2</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">ITGB2</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT2</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">LSP1</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT3</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">LSP1</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">MYL12B</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT3</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">MYL12B</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">NEDD8</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT2, PT2</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">NEDD8</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT2, PT2</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1, Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">NPM1</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT3, PT3</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">NPM1</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT3, PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1, Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">PSMA7</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT2, PT2</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PSMA7</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT2, PT2</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1, Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">S100A8</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT1, PT2, PT2, PT3, PT3</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1, Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">S100A8</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT1, PT2, PT2, PT3, PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1, Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">S100A9</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT1</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">S100A9</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT1</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">SLC25A3</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT1</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">SLC25A3</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT1</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0eed"><p class="cl-903df1c8"><span class="cl-9037859a">TMA7</span></p></td>
-<td class="cl-903e0ef6"><p class="cl-903df1c8"><span class="cl-9037859a">PT2</span></p></td>
-<td class="cl-903e0f00"><p class="cl-903df1c8"><span class="cl-9037859a">Group 1</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">SPI1</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT3</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 2</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-903e0f0a"><p class="cl-903df1c8"><span class="cl-9037859a">UBB</span></p></td>
-<td class="cl-903e0f0b"><p class="cl-903df1c8"><span class="cl-9037859a">PT2</span></p></td>
-<td class="cl-903e0f0c"><p class="cl-903df1c8"><span class="cl-9037859a">Group 2</span></p></td>
+<td class="cl-c8ef3310"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">TMA7</span></p></td>
+<td class="cl-c8ef3311"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT2</span></p></td>
+<td class="cl-c8ef331a"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 1</span></p></td>
+</tr>
+<tr style="overflow-wrap:break-word;">
+<td class="cl-c8ef331b"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">UBB</span></p></td>
+<td class="cl-c8ef3324"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">PT2</span></p></td>
+<td class="cl-c8ef3325"><p class="cl-c8ef1e2a"><span class="cl-c8ecf38e">Group 2</span></p></td>
 </tr>
 </tbody>
 </table>
@@ -483,40 +465,40 @@ across bins.</p>
 <h2 id="hub-genes">Hub Genes<a class="anchor" aria-label="anchor" href="#hub-genes"></a>
 </h2>
 <p>Identify top hub genes for communities in each pseudotime bin.</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ft</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/summarize_hub_genes_across_bins.html">summarize_hub_genes_across_bins</a></span><span class="op">(</span><span class="va">comm_results</span>, <span class="va">pt_results</span>, top_n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span><span class="va">ft</span></span></code></pre></div>
 <div class="tabwid">
-<style>.cl-906732f4{}.cl-90621b8e{font-family:'DejaVu Sans';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-90621ba2{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-906455d4{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-906463bc{width:0.568in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463bd{width:0.899in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463c6{width:7.313in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463d0{width:0.568in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463d1{width:0.899in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463da{width:7.313in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463db{width:0.568in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463e4{width:0.899in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463ee{width:7.313in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463ef{width:0.568in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463f8{width:0.899in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-906463f9{width:7.313in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style>
-<table data-quarto-disable-processing="true" class="table cl-906732f4">
+<style>.cl-c90d9120{}.cl-c909c626{font-family:'DejaVu Sans';font-size:11pt;font-weight:bold;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-c909c630{font-family:'DejaVu Sans';font-size:11pt;font-weight:normal;font-style:normal;text-decoration:none;color:rgba(0, 0, 0, 1.00);background-color:transparent;}.cl-c90b677e{margin:0;text-align:left;border-bottom: 0 solid rgba(0, 0, 0, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);padding-bottom:5pt;padding-top:5pt;padding-left:5pt;padding-right:5pt;line-height: 1;background-color:transparent;}.cl-c90b77fa{width:0.568in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7804{width:0.899in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b780e{width:7.444in;background-color:rgba(190, 190, 190, 1.00);vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 1.5pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b780f{width:0.568in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7810{width:0.899in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7818{width:7.444in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0 solid rgba(0, 0, 0, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7819{width:0.568in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b781a{width:0.899in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7822{width:7.444in;background-color:transparent;vertical-align: middle;border-bottom: 0.75pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7823{width:0.568in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b782c{width:0.899in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}.cl-c90b7836{width:7.444in;background-color:transparent;vertical-align: middle;border-bottom: 1.5pt solid rgba(102, 102, 102, 1.00);border-top: 0.75pt solid rgba(102, 102, 102, 1.00);border-left: 0 solid rgba(0, 0, 0, 1.00);border-right: 0 solid rgba(0, 0, 0, 1.00);margin-bottom:0;margin-top:0;margin-left:0;margin-right:0;}</style>
+<table data-quarto-disable-processing="true" class="table cl-c90d9120">
 <thead><tr style="overflow-wrap:break-word;">
-<th class="cl-906463bc"><p class="cl-906455d4"><span class="cl-90621b8e">Bin</span></p></th>
-<th class="cl-906463bd"><p class="cl-906455d4"><span class="cl-90621b8e">Group</span></p></th>
-<th class="cl-906463c6"><p class="cl-906455d4"><span class="cl-90621b8e">Top Hub Genes</span></p></th>
+<th class="cl-c90b77fa"><p class="cl-c90b677e"><span class="cl-c909c626">Bin</span></p></th>
+<th class="cl-c90b7804"><p class="cl-c90b677e"><span class="cl-c909c626">Group</span></p></th>
+<th class="cl-c90b780e"><p class="cl-c90b677e"><span class="cl-c909c626">Top Hub Genes</span></p></th>
 </tr></thead>
 <tbody>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-906463d0"><p class="cl-906455d4"><span class="cl-90621ba2">PT1</span></p></td>
-<td class="cl-906463d1"><p class="cl-906455d4"><span class="cl-90621ba2">Group 1</span></p></td>
-<td class="cl-906463da"><p class="cl-906455d4"><span class="cl-90621ba2">S100A8, HLA-DRB5, S100A9, CAPZB, SLC25A3, RHOG, UBE2D3, NDUFA11, ATP6V0E1, BST2</span></p></td>
+<td class="cl-c90b780f"><p class="cl-c90b677e"><span class="cl-c909c630">PT1</span></p></td>
+<td class="cl-c90b7810"><p class="cl-c90b677e"><span class="cl-c909c630">Group 1</span></p></td>
+<td class="cl-c90b7818"><p class="cl-c90b677e"><span class="cl-c909c630">S100A8, HLA-DRB5, S100A9, CAPZB, SLC25A3, RHOG, UBE2D3, NDUFA11, ATP6V0E1, PSMB3</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td rowspan="2" class="cl-906463db"><p class="cl-906455d4"><span class="cl-90621ba2">PT2</span></p></td>
-<td class="cl-906463e4"><p class="cl-906455d4"><span class="cl-90621ba2">Group 1</span></p></td>
-<td class="cl-906463ee"><p class="cl-906455d4"><span class="cl-90621ba2">S100A8, PSMA7, NEDD8, TMA7, ITGB2, UBB, SSR4, LGALS9, HLA-DRB5, CSTB</span></p></td>
+<td rowspan="2" class="cl-c90b7819"><p class="cl-c90b677e"><span class="cl-c909c630">PT2</span></p></td>
+<td class="cl-c90b781a"><p class="cl-c90b677e"><span class="cl-c909c630">Group 1</span></p></td>
+<td class="cl-c90b7822"><p class="cl-c90b677e"><span class="cl-c909c630">S100A8, PSMA7, NEDD8, TMA7, ITGB2, UBB, SSR4, LGALS9, HLA-DRB5, CSTB</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-906463e4"><p class="cl-906455d4"><span class="cl-90621ba2">Group 2</span></p></td>
-<td class="cl-906463ee"><p class="cl-906455d4"><span class="cl-90621ba2">S100A8, PSMA7, NEDD8, UBB, HLA-DRB5, ITGB2, TMA7, SSR4, LGALS9, HLA-DPA1</span></p></td>
+<td class="cl-c90b781a"><p class="cl-c90b677e"><span class="cl-c909c630">Group 2</span></p></td>
+<td class="cl-c90b7822"><p class="cl-c90b677e"><span class="cl-c909c630">S100A8, PSMA7, NEDD8, UBB, HLA-DRB5, TMA7, HLA-DPA1, SSR4, PPP1CA, GRN</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td rowspan="2" class="cl-906463ef"><p class="cl-906455d4"><span class="cl-90621ba2">PT3</span></p></td>
-<td class="cl-906463e4"><p class="cl-906455d4"><span class="cl-90621ba2">Group 1</span></p></td>
-<td class="cl-906463ee"><p class="cl-906455d4"><span class="cl-90621ba2">HLA-DPA1, NPM1, S100A8, HIGD2A, LSP1, MYL12B, ATP5D, C11orf31, CIRBP, SPI1</span></p></td>
+<td rowspan="2" class="cl-c90b7823"><p class="cl-c90b677e"><span class="cl-c909c630">PT3</span></p></td>
+<td class="cl-c90b781a"><p class="cl-c90b677e"><span class="cl-c909c630">Group 1</span></p></td>
+<td class="cl-c90b7822"><p class="cl-c90b677e"><span class="cl-c909c630">HLA-DPA1, NPM1, S100A8, HIGD2A, LSP1, MYL12B, ATP5D, C11orf31, CIRBP, SPI1</span></p></td>
 </tr>
 <tr style="overflow-wrap:break-word;">
-<td class="cl-906463f8"><p class="cl-906455d4"><span class="cl-90621ba2">Group 2</span></p></td>
-<td class="cl-906463f9"><p class="cl-906455d4"><span class="cl-90621ba2">HLA-DPA1, NPM1, S100A8, HIGD2A, MYL12B, SPI1, LSP1, S100A9, CD74, SLC25A5</span></p></td>
+<td class="cl-c90b782c"><p class="cl-c90b677e"><span class="cl-c909c630">Group 2</span></p></td>
+<td class="cl-c90b7836"><p class="cl-c90b677e"><span class="cl-c909c630">HLA-DPA1, NPM1, S100A8, MYL12B, SPI1, S100A9, LSP1, SLC25A5, VAMP8, IFITM2</span></p></td>
 </tr>
 </tbody>
 </table>
@@ -525,9 +507,8 @@ across bins.</p>
 <div class="section level2">
 <h2 id="edge-gainloss-analysis">Edge Gain/Loss Analysis<a class="anchor" aria-label="anchor" href="#edge-gainloss-analysis"></a>
 </h2>
-<p>Compare stable, gained, and lost edges between consecutive pseudotime
-bins.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<p>Compare stable, gained, and lost edges between consecutive pseudotime bins.</p>
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_edge_gain_loss.html">plot_edge_gain_loss</a></span><span class="op">(</span><span class="va">pt_results</span>, cluster_id <span class="op">=</span> <span class="st">"C1"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Edges in PT1 : 211806 </span></span>
 <span><span class="co">## Edges in PT2 : 211825 </span></span>
@@ -539,16 +520,16 @@ bins.</p>
 <span><span class="co">## Stable edges ( PT2 to PT3 ): 91598 </span></span>
 <span><span class="co">## Gained edges ( PT2 to PT3 ): 120220 </span></span>
 <span><span class="co">## Lost edges ( PT2 to PT3 ): 120227</span></span></code></pre>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_gl</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">plot</span>  <span class="co"># Correct assignment</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">p_gl</span><span class="op">)</span></span></code></pre></div>
 <p><img src="pseudotime_mi_network_files/figure-html/unnamed-chunk-11-1.png" alt="bar plot of edges changes between bins" width="768"></p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Inspect specific edges (e.g., for PT1 to PT2)</span></span>
 <span><span class="va">pt1_to_pt2_edges</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">edge_details</span><span class="op">[[</span><span class="st">"PT1 to PT2"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Gained edges (PT1 to PT2):\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Gained edges (PT1 to PT2):</span></span></code></pre>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">gained</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">gained</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">gained</span>, <span class="st">"gained_edges_PT1_to_PT2.csv"</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -566,10 +547,10 @@ bins.</p>
 <span><span class="co">## 8         ANXA2_S100A8</span></span>
 <span><span class="co">## 9       NDUFA13_S100A8</span></span>
 <span><span class="co">## 10         CD63_S100A8</span></span></code></pre>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Lost edges (PT1 to PT2):\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Lost edges (PT1 to PT2):</span></span></code></pre>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">lost</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">lost</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">lost</span>, <span class="st">"lost_edges_PT1_to_PT2.csv"</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -587,10 +568,10 @@ bins.</p>
 <span><span class="co">## 8     S100A8_WDR83OS</span></span>
 <span><span class="co">## 9       S100A8_UQCRH</span></span>
 <span><span class="co">## 10    ANAPC16_S100A8</span></span></code></pre>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Stable edges (PT1 to PT2):\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Stable edges (PT1 to PT2):</span></span></code></pre>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">stable</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">stable</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">pt1_to_pt2_edges</span><span class="op">$</span><span class="va">stable</span>, <span class="st">"stable_edges_PT1_to_PT2.csv"</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -608,12 +589,12 @@ bins.</p>
 <span><span class="co">## 8          FCN1_S100A8</span></span>
 <span><span class="co">## 9          GPX1_S100A8</span></span>
 <span><span class="co">## 10       NFKBIA_S100A8</span></span></code></pre>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Repeat for PT2 to PT3</span></span>
 <span><span class="va">pt2_to_pt3_edges</span> <span class="op">&lt;-</span> <span class="va">result</span><span class="op">$</span><span class="va">edge_details</span><span class="op">[[</span><span class="st">"PT2 to PT3"</span><span class="op">]</span><span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"Gained edges (PT2 to PT3):\n"</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Gained edges (PT2 to PT3):</span></span></code></pre>
-<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">pt2_to_pt3_edges</span><span class="op">$</span><span class="va">gained</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">pt2_to_pt3_edges</span><span class="op">$</span><span class="va">gained</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">pt2_to_pt3_edges</span><span class="op">$</span><span class="va">gained</span>, <span class="st">"gained_edges_PT2_to_PT3.csv"</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -631,21 +612,13 @@ bins.</p>
 <span><span class="co">## 8          GMFG_S100A8</span></span>
 <span><span class="co">## 9         S100A8_SF3B5</span></span>
 <span><span class="co">## 10        CNPY3_S100A8</span></span></code></pre>
-<p>To further explore dynamic gene interactions, we used
-<code><a href="../reference/plot_edge_gain_loss.html">plot_edge_gain_loss()</a></code> to quantify and visualize stable,
-gained, and lost edges between consecutive pseudotime bins. The function
-returns both a summary plot and detailed edge lists for each transition.
-For example, from <strong>PT1→PT2</strong>, over 120K edges were gained
-or lost, and ~87K remained stable. Exported edge tables (e.g.,
-‘gained_edges_PT1_to_PT2.csv’) can be used for downstream analysis of
-context-specific co-regulation.</p>
+<p>To further explore dynamic gene interactions, we used <code><a href="../reference/plot_edge_gain_loss.html">plot_edge_gain_loss()</a></code> to quantify and visualize stable, gained, and lost edges between consecutive pseudotime bins. The function returns both a summary plot and detailed edge lists for each transition. For example, from <strong>PT1→PT2</strong>, over 120K edges were gained or lost, and ~87K remained stable. Exported edge tables (e.g., ‘gained_edges_PT1_to_PT2.csv’) can be used for downstream analysis of context-specific co-regulation.</p>
 </div>
 <div class="section level2">
 <h2 id="gene-pseudotime-correlation-density">Gene-Pseudotime Correlation Density<a class="anchor" aria-label="anchor" href="#gene-pseudotime-correlation-density"></a>
 </h2>
-<p>Plot distribution of gene expression–pseudotime correlations to gauge
-overall trends.</p>
-<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<p>Plot distribution of gene expression–pseudotime correlations to gauge overall trends.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gc_df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/gene_pt_correlation.html">gene_pt_correlation</a></span><span class="op">(</span></span>
 <span>  <span class="va">seurat_obj</span><span class="op">[</span>, <span class="va">seurat_obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">RNA_snn_res.0.1</span> <span class="op">==</span> <span class="st">"1"</span><span class="op">]</span>,</span>
 <span>  pseudotime_col <span class="op">=</span> <span class="st">"pseudotime"</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, layer <span class="op">=</span> <span class="st">"data"</span>, method <span class="op">=</span> <span class="st">"spearman"</span></span>
@@ -661,7 +634,7 @@ overall trends.</p>
 <h2 id="top-10-genes-by-correlation">Top ±10 Genes by Correlation<a class="anchor" aria-label="anchor" href="#top-10-genes-by-correlation"></a>
 </h2>
 <p>Plot top 10 positively and negatively correlated genes.</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">top_genes_df</span> <span class="op">&lt;-</span> <span class="va">gc_df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">Cor</span><span class="op">)</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_max</a></span><span class="op">(</span><span class="va">Cor</span>, n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span></span>
@@ -682,11 +655,11 @@ overall trends.</p>
 <h2 id="heatmap-of-top-10-genes">Heatmap of Top 10 Genes<a class="anchor" aria-label="anchor" href="#heatmap-of-top-10-genes"></a>
 </h2>
 <p>Heatmap of top 10 genes by pseudotime correlation.</p>
-<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">top10</span> <span class="op">&lt;-</span> <span class="va">gc_df</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/slice.html" class="external-link">slice_max</a></span><span class="op">(</span><span class="va">Cor</span>, n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">Gene</span><span class="op">)</span> <span class="op"><a href="https://magrittr.tidyverse.org/reference/pipe.html" class="external-link">%&gt;%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="va">valid_cells</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/row_colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">)</span><span class="op">[</span><span class="va">seurat_obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">RNA_snn_res.0.1</span> <span class="op">==</span> <span class="st">"1"</span> <span class="op">&amp;</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">$</span><span class="va">pseudotime</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">cells</span> <span class="op">&lt;-</span> <span class="va">valid_cells</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="va">seurat_obj</span><span class="op">@</span><span class="va">meta.data</span><span class="op">[</span><span class="va">valid_cells</span>, <span class="st">"pseudotime"</span><span class="op">]</span><span class="op">)</span><span class="op">]</span></span>
-<span><span class="va">expr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">seurat_obj</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, slot <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
+<span><span class="va">expr</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.github.io/seurat-object/reference/AssayData.html" class="external-link">GetAssayData</a></span><span class="op">(</span><span class="va">seurat_obj</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>, slot <span class="op">=</span> <span class="st">"data"</span><span class="op">)</span></span>
 <span><span class="va">present</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">intersect</a></span><span class="op">(</span><span class="va">top10</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">expr</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">missing</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://generics.r-lib.org/reference/setops.html" class="external-link">setdiff</a></span><span class="op">(</span><span class="va">top10</span>, <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">expr</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">mat</span> <span class="op">&lt;-</span> <span class="va">expr</span><span class="op">[</span><span class="va">present</span>, <span class="va">cells</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
@@ -702,9 +675,8 @@ overall trends.</p>
 <div class="section level2">
 <h2 id="module-score-trajectories">Module-Score Trajectories<a class="anchor" aria-label="anchor" href="#module-score-trajectories"></a>
 </h2>
-<p>Compute and plot module scores for PT2 communities along
-pseudotime.</p>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<p>Compute and plot module scores for PT2 communities along pseudotime.</p>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Define custom modules to plot</span></span>
 <span><span class="va">custom_mods</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  M1 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">'S100A8'</span>, <span class="st">'UBB'</span>, <span class="st">'SSR4'</span><span class="op">)</span>,</span>
@@ -723,15 +695,8 @@ pseudotime.</p>
 <div class="section level2">
 <h2 id="edge-pseudotime-correlation-density">Edge-Pseudotime Correlation Density<a class="anchor" aria-label="anchor" href="#edge-pseudotime-correlation-density"></a>
 </h2>
-<p>Compute and plot the density of edge-pseudotime correlations for a
-specified pseudotime bin. We evaluated how gene-gene interactions change
-with pseudotime by computing Spearman correlations between edge
-expression and pseudotime in PT2. Using
-<code><a href="../reference/plot_edge_correlations.html">plot_edge_correlations()</a></code>, we observed that edge
-correlations are centered around zero across all groups. While Community
-1 and Community 2 show similar distributions, subtle differences suggest
-distinct temporal dynamics within and across gene modules.</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<p>Compute and plot the density of edge-pseudotime correlations for a specified pseudotime bin. We evaluated how gene-gene interactions change with pseudotime by computing Spearman correlations between edge expression and pseudotime in PT2. Using <code><a href="../reference/plot_edge_correlations.html">plot_edge_correlations()</a></code>, we observed that edge correlations are centered around zero across all groups. While Community 1 and Community 2 show similar distributions, subtle differences suggest distinct temporal dynamics within and across gene modules.</p>
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p_ec</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/plot_edge_correlations.html">plot_edge_correlations</a></span><span class="op">(</span></span>
 <span>  <span class="va">comm_results</span>, <span class="va">pt_results</span>, <span class="va">seurat_obj</span>, bin_name <span class="op">=</span> <span class="st">"PT2"</span>,</span>
 <span>  cluster_field <span class="op">=</span> <span class="st">"RNA_snn_res.0.1"</span>, cluster_id <span class="op">=</span> <span class="st">"1"</span>, assay <span class="op">=</span> <span class="st">"RNA"</span>,</span>
@@ -745,25 +710,26 @@ distinct temporal dynamics within and across gene modules.</p>
 <h2 id="combined-summary-plots">Combined Summary Plots<a class="anchor" aria-label="anchor" href="#combined-summary-plots"></a>
 </h2>
 <p>Arrange key plots into a composite figure for quick overview.</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span><span class="va">p_pt</span> <span class="op">|</span> <span class="va">p_gc</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="va">p_ec</span> <span class="op">|</span> <span class="va">p_gl</span><span class="op">)</span> <span class="op">/</span> <span class="va">p_modtraj</span></span></code></pre></div>
 <p><img src="pseudotime_mi_network_files/figure-html/unnamed-chunk-17-1.png" alt="Combined plot" width="1152"></p>
 </div>
 <div class="section level2">
 <h2 id="save-results">Save Results<a class="anchor" aria-label="anchor" href="#save-results"></a>
 </h2>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># saveRDS(pt_results, "pseudotime_results.rds")</span></span>
 <span><span class="co"># saveRDS(comm_results, "pseudotime_communities.rds")</span></span>
 <span><span class="co"># saveRDS(enrich_results, "enrich_results.rds")</span></span></code></pre></div>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/sessionInfo.html" class="external-link">sessionInfo</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## R version 4.2.1 (2022-06-23)</span></span>
+<pre><code><span><span class="co">## R version 4.3.2 (2023-10-31)</span></span>
 <span><span class="co">## Platform: x86_64-pc-linux-gnu (64-bit)</span></span>
-<span><span class="co">## Running under: Red Hat Enterprise Linux 9.4 (Plow)</span></span>
+<span><span class="co">## Running under: Ubuntu 22.04.5 LTS</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## Matrix products: default</span></span>
-<span><span class="co">## BLAS/LAPACK: /app1/ebapps/arches/flat-avx2/software/FlexiBLAS/3.2.0-GCC-11.3.0/lib64/libflexiblas.so.3.2</span></span>
+<span><span class="co">## BLAS:   /usr/local/lib/R/lib/libRblas.so </span></span>
+<span><span class="co">## LAPACK: /usr/local/lib/R/lib/libRlapack.so;  LAPACK version 3.11.0</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## locale:</span></span>
 <span><span class="co">##  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              </span></span>
@@ -773,81 +739,84 @@ distinct temporal dynamics within and across gene modules.</p>
 <span><span class="co">##  [9] LC_ADDRESS=C               LC_TELEPHONE=C            </span></span>
 <span><span class="co">## [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       </span></span>
 <span><span class="co">## </span></span>
+<span><span class="co">## time zone: Asia/Singapore</span></span>
+<span><span class="co">## tzcode source: system (glibc)</span></span>
+<span><span class="co">## </span></span>
 <span><span class="co">## attached base packages:</span></span>
 <span><span class="co">## [1] stats4    stats     graphics  grDevices utils     datasets  methods  </span></span>
 <span><span class="co">## [8] base     </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## other attached packages:</span></span>
-<span><span class="co">##  [1] DOSE_3.22.1           flextable_0.9.2       ggraph_2.0.5         </span></span>
-<span><span class="co">##  [4] miEdgeR_0.1.0         pheatmap_1.0.12       ggVennDiagram_1.2.3  </span></span>
-<span><span class="co">##  [7] ggpubr_0.4.0          org.Hs.eg.db_3.15.0   AnnotationDbi_1.58.0 </span></span>
-<span><span class="co">## [10] IRanges_2.32.0        S4Vectors_0.36.1      Biobase_2.56.0       </span></span>
-<span><span class="co">## [13] BiocGenerics_0.44.0   clusterProfiler_4.4.4 ggplot2_3.3.6        </span></span>
-<span><span class="co">## [16] dplyr_1.1.4           igraph_1.3.2          SeuratObject_4.1.3   </span></span>
-<span><span class="co">## [19] Seurat_4.3.0         </span></span>
+<span><span class="co">##  [1] DOSE_3.28.2            flextable_0.9.7        ggraph_2.2.1          </span></span>
+<span><span class="co">##  [4] miEdgeR_0.1.0          pheatmap_1.0.12        ggVennDiagram_1.5.2   </span></span>
+<span><span class="co">##  [7] ggpubr_0.6.0           org.Hs.eg.db_3.18.0    AnnotationDbi_1.64.1  </span></span>
+<span><span class="co">## [10] IRanges_2.36.0         S4Vectors_0.40.2       Biobase_2.62.0        </span></span>
+<span><span class="co">## [13] BiocGenerics_0.48.1    clusterProfiler_4.10.1 ggplot2_3.5.1         </span></span>
+<span><span class="co">## [16] dplyr_1.1.4            igraph_2.1.1           SeuratObject_5.0.2    </span></span>
+<span><span class="co">## [19] Seurat_4.3.0.1        </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## loaded via a namespace (and not attached):</span></span>
-<span><span class="co">##   [1] rappdirs_0.3.3          scattermore_1.2         ragg_1.2.5             </span></span>
-<span><span class="co">##   [4] tidyr_1.2.0             bit64_4.0.5             knitr_1.50             </span></span>
-<span><span class="co">##   [7] irlba_2.3.5             data.table_1.14.2       KEGGREST_1.36.2        </span></span>
-<span><span class="co">##  [10] RCurl_1.98-1.7          generics_0.1.3          cowplot_1.1.1          </span></span>
-<span><span class="co">##  [13] RSQLite_2.2.14          shadowtext_0.1.2        RANN_2.6.1             </span></span>
-<span><span class="co">##  [16] future_1.26.1           bit_4.0.4               enrichplot_1.16.2      </span></span>
-<span><span class="co">##  [19] spatstat.data_3.0-0     xml2_1.3.3              httpuv_1.6.5           </span></span>
-<span><span class="co">##  [22] viridis_0.6.2           xfun_0.52               jquerylib_0.1.4        </span></span>
-<span><span class="co">##  [25] evaluate_0.15           promises_1.2.0.1        DBI_1.1.3              </span></span>
-<span><span class="co">##  [28] htmlwidgets_1.5.4       spatstat.geom_3.0-3     purrr_1.0.4            </span></span>
-<span><span class="co">##  [31] ellipsis_0.3.2          backports_1.4.1         fontLiberation_0.1.0   </span></span>
-<span><span class="co">##  [34] fontBitstreamVera_0.1.1 deldir_1.0-6            vctrs_0.6.5            </span></span>
-<span><span class="co">##  [37] ROCR_1.0-11             abind_1.4-5             cachem_1.0.6           </span></span>
-<span><span class="co">##  [40] withr_2.5.0             ggforce_0.3.3           RVenn_1.1.0            </span></span>
-<span><span class="co">##  [43] progressr_0.10.1        sctransform_0.4.1       treeio_1.20.2          </span></span>
-<span><span class="co">##  [46] goftest_1.2-3           cluster_2.1.3           ape_5.6-2              </span></span>
-<span><span class="co">##  [49] lazyeval_0.2.2          crayon_1.5.1            crul_1.2.0             </span></span>
-<span><span class="co">##  [52] spatstat.explore_3.0-5  labeling_0.4.2          pkgconfig_2.0.3        </span></span>
-<span><span class="co">##  [55] tweenr_1.0.2            GenomeInfoDb_1.32.2     nlme_3.1-158           </span></span>
-<span><span class="co">##  [58] rlang_1.1.5             globals_0.15.0          lifecycle_1.0.4        </span></span>
-<span><span class="co">##  [61] miniUI_0.1.1.1          downloader_0.4          fontquiver_0.2.1       </span></span>
-<span><span class="co">##  [64] httpcode_0.3.0          rprojroot_2.0.3         polyclip_1.10-0        </span></span>
-<span><span class="co">##  [67] matrixStats_0.62.0      lmtest_0.9-40           graph_1.74.0           </span></span>
-<span><span class="co">##  [70] Matrix_1.5-3            aplot_0.1.9             carData_3.0-5          </span></span>
-<span><span class="co">##  [73] zoo_1.8-10              ggridges_0.5.3          png_0.1-7              </span></span>
-<span><span class="co">##  [76] viridisLite_0.4.0       bitops_1.0-7            KernSmooth_2.23-20     </span></span>
-<span><span class="co">##  [79] Biostrings_2.64.0       blob_1.2.3              stringr_1.4.0          </span></span>
-<span><span class="co">##  [82] qvalue_2.28.0           parallelly_1.32.0       spatstat.random_3.0-1  </span></span>
-<span><span class="co">##  [85] rstatix_0.7.0           gridGraphics_0.5-1      ggsignif_0.6.3         </span></span>
-<span><span class="co">##  [88] reactome.db_1.81.0      scales_1.2.0            memoise_2.0.1          </span></span>
-<span><span class="co">##  [91] graphite_1.42.0         magrittr_2.0.3          plyr_1.8.7             </span></span>
-<span><span class="co">##  [94] ica_1.0-2               zlibbioc_1.42.0         compiler_4.2.1         </span></span>
-<span><span class="co">##  [97] scatterpie_0.1.8        RColorBrewer_1.1-3      fitdistrplus_1.1-8     </span></span>
-<span><span class="co">## [100] cli_3.6.4               XVector_0.36.0          listenv_0.8.0          </span></span>
-<span><span class="co">## [103] patchwork_1.1.1         pbapply_1.5-0           mgcv_1.8-40            </span></span>
-<span><span class="co">## [106] MASS_7.3-57             tidyselect_1.2.1        stringi_1.7.6          </span></span>
-<span><span class="co">## [109] textshaping_0.3.6       yaml_2.3.10             GOSemSim_2.22.0        </span></span>
-<span><span class="co">## [112] askpass_1.1             ggrepel_0.9.1           grid_4.2.1             </span></span>
-<span><span class="co">## [115] sass_0.4.10             fastmatch_1.1-3         tools_4.2.1            </span></span>
-<span><span class="co">## [118] future.apply_1.9.0      parallel_4.2.1          rstudioapi_0.13        </span></span>
-<span><span class="co">## [121] uuid_1.1-0              gridExtra_2.3           farver_2.1.0           </span></span>
-<span><span class="co">## [124] Rtsne_0.16              digest_0.6.29           shiny_1.7.1            </span></span>
-<span><span class="co">## [127] gfonts_0.2.0            Rcpp_1.0.8.3            car_3.1-0              </span></span>
-<span><span class="co">## [130] broom_0.8.0             infotheo_1.2.0.1        later_1.3.0            </span></span>
-<span><span class="co">## [133] RcppAnnoy_0.0.20        httr_1.4.3              gdtools_0.3.3          </span></span>
-<span><span class="co">## [136] colorspace_2.0-3        fs_1.5.2                tensor_1.5             </span></span>
-<span><span class="co">## [139] reticulate_1.25         splines_4.2.1           uwot_0.1.14            </span></span>
-<span><span class="co">## [142] yulab.utils_0.2.0       tidytree_0.4.1          spatstat.utils_3.1-3   </span></span>
-<span><span class="co">## [145] pkgdown_2.1.1           graphlayouts_0.8.0      sp_1.5-1               </span></span>
-<span><span class="co">## [148] ggplotify_0.1.0         plotly_4.10.0           systemfonts_1.0.4      </span></span>
-<span><span class="co">## [151] xtable_1.8-4            jsonlite_1.8.0          ggtree_3.4.4           </span></span>
-<span><span class="co">## [154] tidygraph_1.2.1         ggfun_0.1.8             R6_2.5.1               </span></span>
-<span><span class="co">## [157] pillar_1.10.1           htmltools_0.5.8.1       mime_0.12              </span></span>
-<span><span class="co">## [160] glue_1.6.2              fastmap_1.2.0           BiocParallel_1.32.5    </span></span>
-<span><span class="co">## [163] codetools_0.2-18        fgsea_1.22.0            lattice_0.20-45        </span></span>
-<span><span class="co">## [166] bslib_0.9.0             spatstat.sparse_3.0-0   tibble_3.2.1           </span></span>
-<span><span class="co">## [169] curl_6.2.2              leiden_0.4.2            ReactomePA_1.40.0      </span></span>
-<span><span class="co">## [172] officer_0.6.2           zip_2.2.0               GO.db_3.15.0           </span></span>
-<span><span class="co">## [175] openssl_2.0.2           survival_3.3-1          rmarkdown_2.29         </span></span>
-<span><span class="co">## [178] desc_1.4.1              munsell_0.5.0           DO.db_2.9              </span></span>
-<span><span class="co">## [181] GenomeInfoDbData_1.2.8  reshape2_1.4.4          gtable_0.3.0</span></span></code></pre>
+<span><span class="co">##   [1] fs_1.6.5                matrixStats_1.4.1       spatstat.sparse_3.1-0  </span></span>
+<span><span class="co">##   [4] bitops_1.0-9            enrichplot_1.22.0       HDO.db_0.99.1          </span></span>
+<span><span class="co">##   [7] httr_1.4.7              RColorBrewer_1.1-3      tools_4.3.2            </span></span>
+<span><span class="co">##  [10] sctransform_0.4.1       backports_1.5.0         utf8_1.2.4             </span></span>
+<span><span class="co">##  [13] R6_2.5.1                mgcv_1.9-0              lazyeval_0.2.2         </span></span>
+<span><span class="co">##  [16] uwot_0.2.2              withr_3.0.2             sp_2.1-4               </span></span>
+<span><span class="co">##  [19] graphite_1.48.0         gridExtra_2.3           progressr_0.15.0       </span></span>
+<span><span class="co">##  [22] cli_3.6.3               textshaping_0.4.0       spatstat.explore_3.3-3 </span></span>
+<span><span class="co">##  [25] scatterpie_0.2.4        officer_0.6.7           labeling_0.4.3         </span></span>
+<span><span class="co">##  [28] sass_0.4.9              spatstat.data_3.1-2     askpass_1.2.1          </span></span>
+<span><span class="co">##  [31] ggridges_0.5.6          pbapply_1.7-2           pkgdown_2.1.1          </span></span>
+<span><span class="co">##  [34] systemfonts_1.1.0       yulab.utils_0.2.0       gson_0.1.0             </span></span>
+<span><span class="co">##  [37] parallelly_1.39.0       RSQLite_2.3.7           generics_0.1.3         </span></span>
+<span><span class="co">##  [40] gridGraphics_0.5-1      ica_1.0-3               spatstat.random_3.3-2  </span></span>
+<span><span class="co">##  [43] zip_2.3.1               car_3.1-3               GO.db_3.18.0           </span></span>
+<span><span class="co">##  [46] Matrix_1.6-4            fansi_1.0.6             abind_1.4-8            </span></span>
+<span><span class="co">##  [49] infotheo_1.2.0.1        lifecycle_1.0.4         yaml_2.3.10            </span></span>
+<span><span class="co">##  [52] carData_3.0-5           qvalue_2.34.0           Rtsne_0.17             </span></span>
+<span><span class="co">##  [55] grid_4.3.2              blob_1.2.4              promises_1.3.0         </span></span>
+<span><span class="co">##  [58] crayon_1.5.3            miniUI_0.1.1.1          lattice_0.21-9         </span></span>
+<span><span class="co">##  [61] cowplot_1.1.3           KEGGREST_1.42.0         pillar_1.9.0           </span></span>
+<span><span class="co">##  [64] knitr_1.48              fgsea_1.28.0            future.apply_1.11.3    </span></span>
+<span><span class="co">##  [67] codetools_0.2-19        fastmatch_1.1-4         leiden_0.4.3.1         </span></span>
+<span><span class="co">##  [70] glue_1.8.0              fontLiberation_0.1.0    ggfun_0.1.7            </span></span>
+<span><span class="co">##  [73] spatstat.univar_3.1-1   data.table_1.16.2       vctrs_0.6.5            </span></span>
+<span><span class="co">##  [76] png_0.1-8               treeio_1.26.0           spam_2.11-0            </span></span>
+<span><span class="co">##  [79] gtable_0.3.6            cachem_1.1.0            xfun_0.49              </span></span>
+<span><span class="co">##  [82] mime_0.12               tidygraph_1.3.1         survival_3.5-7         </span></span>
+<span><span class="co">##  [85] fitdistrplus_1.2-1      ROCR_1.0-11             nlme_3.1-163           </span></span>
+<span><span class="co">##  [88] ggtree_3.10.1           bit64_4.5.2             fontquiver_0.2.1       </span></span>
+<span><span class="co">##  [91] RcppAnnoy_0.0.22        GenomeInfoDb_1.38.8     bslib_0.8.0            </span></span>
+<span><span class="co">##  [94] irlba_2.3.5.1           KernSmooth_2.23-22      colorspace_2.1-1       </span></span>
+<span><span class="co">##  [97] DBI_1.2.3               tidyselect_1.2.1        bit_4.5.0              </span></span>
+<span><span class="co">## [100] compiler_4.3.2          graph_1.80.0            xml2_1.3.6             </span></span>
+<span><span class="co">## [103] fontBitstreamVera_0.1.1 desc_1.4.3              plotly_4.10.4          </span></span>
+<span><span class="co">## [106] shadowtext_0.1.4        scales_1.3.0            lmtest_0.9-40          </span></span>
+<span><span class="co">## [109] rappdirs_0.3.3          stringr_1.5.1           digest_0.6.37          </span></span>
+<span><span class="co">## [112] goftest_1.2-3           spatstat.utils_3.1-1    rmarkdown_2.29         </span></span>
+<span><span class="co">## [115] XVector_0.42.0          htmltools_0.5.8.1       pkgconfig_2.0.3        </span></span>
+<span><span class="co">## [118] highr_0.11              fastmap_1.2.0           rlang_1.1.4            </span></span>
+<span><span class="co">## [121] htmlwidgets_1.6.4       shiny_1.9.1             farver_2.1.2           </span></span>
+<span><span class="co">## [124] jquerylib_0.1.4         zoo_1.8-12              jsonlite_1.8.9         </span></span>
+<span><span class="co">## [127] BiocParallel_1.36.0     GOSemSim_2.28.1         RCurl_1.98-1.16        </span></span>
+<span><span class="co">## [130] magrittr_2.0.3          Formula_1.2-5           GenomeInfoDbData_1.2.11</span></span>
+<span><span class="co">## [133] ggplotify_0.1.2         dotCall64_1.2           patchwork_1.3.0        </span></span>
+<span><span class="co">## [136] munsell_0.5.1           Rcpp_1.0.13-1           ape_5.8                </span></span>
+<span><span class="co">## [139] viridis_0.6.5           gdtools_0.4.1           reticulate_1.40.0      </span></span>
+<span><span class="co">## [142] stringi_1.8.4           zlibbioc_1.48.2         MASS_7.3-60            </span></span>
+<span><span class="co">## [145] plyr_1.8.9              parallel_4.3.2          listenv_0.9.1          </span></span>
+<span><span class="co">## [148] ggrepel_0.9.6           deldir_2.0-4            Biostrings_2.70.3      </span></span>
+<span><span class="co">## [151] graphlayouts_1.2.0      splines_4.3.2           tensor_1.5             </span></span>
+<span><span class="co">## [154] uuid_1.2-1              spatstat.geom_3.3-3     ggsignif_0.6.4         </span></span>
+<span><span class="co">## [157] reshape2_1.4.4          evaluate_1.0.1          tweenr_2.0.3           </span></span>
+<span><span class="co">## [160] httpuv_1.6.15           openssl_2.2.2           RANN_2.6.2             </span></span>
+<span><span class="co">## [163] tidyr_1.3.1             purrr_1.0.2             polyclip_1.10-7        </span></span>
+<span><span class="co">## [166] future_1.34.0           scattermore_1.2         ReactomePA_1.46.0      </span></span>
+<span><span class="co">## [169] ggforce_0.4.2           broom_1.0.7             xtable_1.8-4           </span></span>
+<span><span class="co">## [172] reactome.db_1.86.2      tidytree_0.4.6          rstatix_0.7.2          </span></span>
+<span><span class="co">## [175] later_1.3.2             viridisLite_0.4.2       ragg_1.3.3             </span></span>
+<span><span class="co">## [178] tibble_3.2.1            aplot_0.2.3             memoise_2.0.1          </span></span>
+<span><span class="co">## [181] cluster_2.1.4           globals_0.16.3</span></span></code></pre>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

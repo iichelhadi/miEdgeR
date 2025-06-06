@@ -1,10 +1,10 @@
-pandoc: '2.18'
+pandoc: 2.9.2.1
 pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
   mi_network_hypergraph: mi_network_hypergraph.html
   pseudotime_mi_network: pseudotime_mi_network.html
-last_built: 2025-04-28T03:07Z
+last_built: 2025-06-06T06:10Z
 urls:
   reference: https://iichelhadi.github.io/miEdgeR/reference
   article: https://iichelhadi.github.io/miEdgeR/articles
