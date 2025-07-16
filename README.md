@@ -84,3 +84,8 @@ plot_hypergraph(hg, title = "Overlapping Gene Modules")
 - [MI Network and Hypergraph Analysis with miEdgeR](https://iichelhadi.github.io/miEdgeR/articles/mi_network_hypergraph.html)
 - [Pseudotime-Aware MI Network Analysis with miEdgeR](https://iichelhadi.github.io/miEdgeR/articles/pseudotime_mi_network.html)
 
+
+📌 This is a pre-publication version (v0.1.0) of `miEdgeR`.  
+Please do not reuse or redistribute without permission.  
+A citable version will be released upon manuscript acceptance.
+
