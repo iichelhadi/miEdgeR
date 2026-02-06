@@ -4,7 +4,7 @@
 # ───────────────────────────────────────────────────────────────
 # 1. Ignore generated HTML when counting languages:
 *.html linguist-generated
-docs/** linguist-vendored      # if your pkgdown/html lives under docs/
+docs/** linguist-vendored
 
 # 2. Force .R (and lowercase .r) files to count as R:
 *.R   linguist-language=R
