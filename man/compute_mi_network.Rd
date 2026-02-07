@@ -14,7 +14,8 @@ compute_mi_network(
   top_n_genes = 5000,
   max_cells = 1500,
   min_expr_pct = 0.05,
-  n_cores = parallel::detectCores() - 1
+  n_cores = max(1L, parallel::detectCores() - 1L),
+  percentile = 0.95
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ compute_mi_network(
 \item{min_expr_pct}{Minimum expression percentage}
 
 \item{n_cores}{Number of cores}
+
+\item{percentile}{MI percentile threshold for graph edges}
 }
 \value{
 List containing graph, MI matrix, and genes

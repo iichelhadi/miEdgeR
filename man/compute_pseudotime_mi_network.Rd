@@ -2,7 +2,7 @@
 % Please edit documentation in R/pseudotime.R
 \name{compute_pseudotime_mi_network}
 \alias{compute_pseudotime_mi_network}
-\title{Compute Pseudotime-Aware MI Networks}
+\title{Compute Pseudotime-Aware MI Networks (per pseudotime bin)}
 \usage{
 compute_pseudotime_mi_network(
   seurat_obj,
@@ -24,7 +24,7 @@ compute_pseudotime_mi_network(
 \arguments{
 \item{seurat_obj}{Seurat object}
 
-\item{cluster_id}{Cluster ID}
+\item{cluster_id}{Cluster ID value}
 
 \item{cluster_field}{Metadata column name for clusters}
 
@@ -32,27 +32,27 @@ compute_pseudotime_mi_network(
 
 \item{assay_name}{Assay name (default: "RNA")}
 
-\item{counts_layer}{Layer for counts data (default: "counts")}
+\item{counts_layer}{Layer/slot for counts (default: "counts")}
 
-\item{data_layer}{Layer for normalized data (default: "data")}
+\item{data_layer}{Layer/slot for normalized data (default: "data")}
 
 \item{n_bins}{Number of pseudotime bins}
 
 \item{min_cells_bin}{Minimum cells per bin}
 
-\item{top_n_genes}{Number of top variable genes}
+\item{top_n_genes}{Top variable genes}
 
-\item{max_cells}{Maximum number of cells}
+\item{max_cells}{Max cells (subsampling inside get_expr_data)}
 
 \item{min_expr_pct}{Minimum expression percentage}
 
-\item{n_cores}{Number of cores}
+\item{n_cores}{Cores}
 
-\item{bin_method}{Binning method ("quantile" or "equal_width")}
+\item{bin_method}{"quantile" or "equal_width"}
 }
 \value{
-List of MI networks per pseudotime bin
+Named list of igraph objects per bin (NULL where skipped)
 }
 \description{
-Compute Pseudotime-Aware MI Networks
+Compute Pseudotime-Aware MI Networks (per pseudotime bin)
 }

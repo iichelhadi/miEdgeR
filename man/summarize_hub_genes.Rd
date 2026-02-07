@@ -24,5 +24,6 @@ summarize_hub_genes(
 A flextable object.
 }
 \description{
-Generates a flextable summarizing the top hub genes (by degree) for each community in a consensus graph.
+Generates a flextable summarizing the top hub genes (by degree) for each community
+in a consensus graph.
 }

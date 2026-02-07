@@ -10,86 +10,108 @@
 #' @param cluster_field Character, metadata field for cluster IDs (default: "RNA_snn_res.0.1").
 #' @param cluster_id Character, cluster ID to filter cells (default: "1").
 #' @param assay Character, assay to use for module scoring (default: "RNA").
+#' @param pseudotime_field Character, metadata field containing pseudotime (default: "pseudotime").
 #' @param title Character, title of the plot (default: "Module-Score Trajectories").
 #' @return A ggplot object.
 #' @export
 #' @importFrom Seurat DefaultAssay AddModuleScore GetAssayData
 #' @importFrom dplyr bind_rows
-#' @importFrom ggplot2 ggplot aes geom_smooth facet_wrap labs geom_hline theme scale_color_manual scale_fill_manual
 #' @importFrom ggpubr theme_pubr
 #' @importFrom scales hue_pal
-plot_module_trajectories <- function(comm_results, seurat_obj, bin_index, comm_indices = NULL, custom_modules = NULL,
-                                     cluster_field = "RNA_snn_res.0.1", cluster_id = "1", assay = "RNA",
+plot_module_trajectories <- function(comm_results,
+                                     seurat_obj,
+                                     bin_index,
+                                     comm_indices = NULL,
+                                     custom_modules = NULL,
+                                     cluster_field = "RNA_snn_res.0.1",
+                                     cluster_id = "1",
+                                     assay = "RNA",
+                                     pseudotime_field = "pseudotime",
                                      title = "Module-Score Trajectories") {
-  # Validate inputs
-  if (!bin_index %in% seq_along(comm_results)) {
-    stop("bin_index must be a valid index within comm_results.")
-  }
+
+  if (!is.list(comm_results) || length(comm_results) == 0) stop("comm_results must be a non-empty list.")
+  if (!bin_index %in% seq_along(comm_results)) stop("bin_index must be a valid index within comm_results.")
+
+  if (!inherits(seurat_obj, "Seurat")) stop("seurat_obj must be a Seurat object.")
+  if (!cluster_field %in% colnames(seurat_obj@meta.data)) stop("cluster_field not found in seurat_obj@meta.data.")
+  if (!pseudotime_field %in% colnames(seurat_obj@meta.data)) stop("pseudotime_field not found in seurat_obj@meta.data.")
 
   # Extract communities for the specified bin
-  large_communities <- lapply(comm_results[[bin_index]]$communities, unlist)
+  if (is.null(comm_results[[bin_index]]$communities) || !is.list(comm_results[[bin_index]]$communities)) {
+    stop("comm_results[[bin_index]]$communities must be a list.")
+  }
+  large_communities <- lapply(comm_results[[bin_index]]$communities, function(x) unique(as.character(unlist(x))))
 
-  # If custom_modules is provided, use it exclusively; otherwise, use comm_indices
+  # Build module list
   if (!is.null(custom_modules)) {
-    if (!is.list(custom_modules) || is.null(names(custom_modules))) {
-      stop("custom_modules must be a named list.")
-    }
-    mods <- custom_modules
+    if (!is.list(custom_modules) || is.null(names(custom_modules))) stop("custom_modules must be a named list.")
+    mods <- lapply(custom_modules, function(x) unique(as.character(x)))
   } else {
-    # Default to all communities if comm_indices is NULL
-    if (is.null(comm_indices)) {
-      comm_indices <- seq_along(large_communities)
-    }
-
-    # Validate comm_indices
-    if (length(comm_indices) < 1 || any(comm_indices > length(large_communities))) {
+    if (is.null(comm_indices)) comm_indices <- seq_along(large_communities)
+    if (length(comm_indices) < 1 || any(comm_indices < 1) || any(comm_indices > length(large_communities))) {
       stop("Invalid community indices provided.")
     }
-
-    # Create modules for selected communities with dynamic naming
-    mods <- lapply(comm_indices, function(i) {
-      setNames(list(large_communities[[i]]), paste0(as.character(cluster_id), "_M", i))
-    })
-    mods <- do.call(c, mods)
+    mods <- setNames(
+      lapply(comm_indices, function(i) large_communities[[i]]),
+      paste0(as.character(cluster_id), "_M", comm_indices)
+    )
   }
 
-  # Compute module scores
+  # Prepare object + filter cells once
   so <- seurat_obj
-  DefaultAssay(so) <- assay
+  Seurat::DefaultAssay(so) <- assay
+
+  cluster_vec <- as.character(so@meta.data[[cluster_field]])
+  pt_vec <- so@meta.data[[pseudotime_field]]
+  keep_cells <- colnames(so)[cluster_vec == as.character(cluster_id) & !is.na(pt_vec)]
+
+  if (length(keep_cells) == 0) stop("No cells remain after filtering by cluster_field/cluster_id and non-NA pseudotime.")
+
+  # Ensure features exist in assay
+  feat_universe <- rownames(Seurat::GetAssayData(so, assay = assay, slot = "data"))
+
+  # Add module scores (skip empty modules)
   for (modName in names(mods)) {
-    so <- AddModuleScore(so, features = list(mods[[modName]]), name = modName)
+    feats <- intersect(mods[[modName]], feat_universe)
+    if (length(feats) == 0) {
+      warning("Skipping module '", modName, "': 0 genes found in assay.")
+      next
+    }
+    so <- Seurat::AddModuleScore(so, features = list(feats), name = modName)
   }
 
-  # Create trajectory data frame
-  traj_df <- dplyr::bind_rows(lapply(names(mods), function(modName) {
-    keep_cells <- colnames(so)[so@meta.data[[cluster_field]] == cluster_id & !is.na(so@meta.data$pseudotime)]
+  valid_mods <- names(mods)[paste0(names(mods), "1") %in% colnames(so@meta.data)]
+  if (length(valid_mods) == 0) stop("No module score columns were created (all modules empty or missing).")
+
+  # Trajectory dataframe
+  traj_df <- dplyr::bind_rows(lapply(valid_mods, function(modName) {
     score_col <- paste0(modName, "1")
     data.frame(
-      Cell = keep_cells,
-      Cluster = cluster_id,
-      Module = modName,
-      Pseudotime = so@meta.data[keep_cells, "pseudotime"],
-      Score = so@meta.data[keep_cells, score_col],
+      Cell       = keep_cells,
+      Cluster    = as.character(cluster_id),
+      Module     = modName,
+      Pseudotime = so@meta.data[keep_cells, pseudotime_field],
+      Score      = so@meta.data[keep_cells, score_col],
       stringsAsFactors = FALSE
     )
   }))
 
-  # Define module labels and colors
-  n_modules <- length(mods)
-  module_labels <- setNames(names(mods), names(mods))
-  module_color <- scales::hue_pal()(n_modules)
-  names(module_color) <- names(mods)
+  # Labels + colors
+  module_labels <- stats::setNames(valid_mods, valid_mods)
+  module_color <- scales::hue_pal()(length(valid_mods))
+  names(module_color) <- valid_mods
 
-  # Plot trajectories
-  p_modtraj <- ggplot(traj_df, aes(x = Pseudotime, y = Score, color = Module, fill = Module)) +
-    geom_smooth(se = TRUE, span = 0.5) +
-    facet_wrap(~ Cluster, scales = "free_x") +
-    labs(title = title, x = "Pseudotime", y = "Module Score") +
+  ggplot2::ggplot(traj_df, ggplot2::aes(x = .data$Pseudotime, y = .data$Score, color = .data$Module, fill = .data$Module)) +
+    ggplot2::geom_smooth(se = TRUE, span = 0.5) +
+    ggplot2::facet_wrap(~ Cluster, scales = "free_x") +
+    ggplot2::labs(title = title, x = "Pseudotime", y = "Module Score") +
     ggpubr::theme_pubr(legend = "right") +
-    geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-    theme(strip.background = element_blank(), strip.text = element_text(face = "bold", size = 18)) +
-    scale_color_manual(values = module_color, labels = module_labels) +
-    scale_fill_manual(values = module_color, labels = module_labels)
-
-  p_modtraj
+    ggplot2::geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+    ggplot2::theme(
+      strip.background = ggplot2::element_blank(),
+      strip.text = ggplot2::element_text(face = "bold", size = 18)
+    ) +
+    ggplot2::scale_color_manual(values = module_color, labels = module_labels) +
+    ggplot2::scale_fill_manual(values = module_color, labels = module_labels)
 }
+

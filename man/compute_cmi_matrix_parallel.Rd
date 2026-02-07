@@ -12,13 +12,13 @@ compute_cmi_matrix_parallel(
 )
 }
 \arguments{
-\item{expr_subset}{Expression data subset}
+\item{expr_subset}{Expression matrix (genes x cells)}
 
-\item{pt_vec}{Pseudotime vector}
+\item{pt_vec}{Pseudotime vector (length = cells)}
 
-\item{n_cores}{Number of cores}
+\item{n_cores}{Cores}
 
-\item{nbins}{Number of bins}
+\item{nbins}{Discretization bins}
 }
 \value{
 Conditional MI matrix

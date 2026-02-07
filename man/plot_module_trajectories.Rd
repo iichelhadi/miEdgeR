@@ -13,6 +13,7 @@ plot_module_trajectories(
   cluster_field = "RNA_snn_res.0.1",
   cluster_id = "1",
   assay = "RNA",
+  pseudotime_field = "pseudotime",
   title = "Module-Score Trajectories"
 )
 }
@@ -32,6 +33,8 @@ plot_module_trajectories(
 \item{cluster_id}{Character, cluster ID to filter cells (default: "1").}
 
 \item{assay}{Character, assay to use for module scoring (default: "RNA").}
+
+\item{pseudotime_field}{Character, metadata field containing pseudotime (default: "pseudotime").}
 
 \item{title}{Character, title of the plot (default: "Module-Score Trajectories").}
 }

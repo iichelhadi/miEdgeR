@@ -4,12 +4,18 @@
 \alias{compute_mi_matrix_parallel}
 \title{Compute Mutual Information Matrix in Parallel}
 \usage{
-compute_mi_matrix_parallel(expr_subset, n_cores = parallel::detectCores() - 10)
+compute_mi_matrix_parallel(
+  expr_subset,
+  n_cores = max(1L, parallel::detectCores() - 1L),
+  chunk_size = 200000L
+)
 }
 \arguments{
-\item{expr_subset}{Expression data subset}
+\item{expr_subset}{Expression data subset (genes x cells)}
 
 \item{n_cores}{Number of cores}
+
+\item{chunk_size}{Number of gene pairs per chunk (default 200000)}
 }
 \value{
 MI matrix

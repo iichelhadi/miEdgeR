@@ -12,7 +12,8 @@ plot_go_terms(
 )
 }
 \arguments{
-\item{enrich_results}{A named list of enrichment results from enrich_go.}
+\item{enrich_results}{A named list of enrichment results from enrich_go (clusterProfiler enrichResult
+objects OR data.frames with columns Description and p.adjust).}
 
 \item{top_n_terms}{Integer, number of top terms to plot per community (default: 4).}
 
@@ -21,7 +22,7 @@ plot_go_terms(
 \item{ontology}{Character, ontology used ("BP", "CC", "MF", "ALL", "KEGG", "DO", "Reactome") (default: "BP").}
 }
 \value{
-A ggplot object.
+A ggplot object or NULL.
 }
 \description{
 Visualizes the top enrichment terms from enrichment results in a dot plot.

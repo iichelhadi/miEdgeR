@@ -19,7 +19,7 @@ gene_pt_correlation(
 
 \item{assay}{Assay name}
 
-\item{layer}{Layer name}
+\item{layer}{Layer (Seurat v5) or slot (Seurat v4)}
 
 \item{method}{Correlation method}
 }

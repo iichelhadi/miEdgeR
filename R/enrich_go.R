@@ -2,188 +2,158 @@
 #'
 #' Performs enrichment analysis for each community using specified semantic space.
 #'
-#' @param large_communities A list of communities or a list of community detection results (from detect_communities_across_bins).
-#' @param semantic_space Character, semantic space to use ("GO", "KEGG", "DO", "Reactome") (default: "GO").
-#' @param ontology Character, GO ontology to use ("BP", "CC", "MF", or "ALL") (default: "BP").
+#' @param large_communities A list of communities OR a list of bin results from detect_communities_across_bins()
+#'        where each element contains $bin and $communities.
+#' @param semantic_space Character, one of: "GO", "KEGG", "DO", "Reactome" (default: "GO").
+#' @param ontology Character, GO ontology: "BP", "CC", "MF", "ALL" (default: "BP").
 #' @param pvalueCutoff Numeric, p-value cutoff for enrichment (default: 0.05).
 #' @param qvalueCutoff Numeric, q-value cutoff for enrichment (default: 0.2).
-#' @return A named list of enrichment results.
+#' @param verbose Logical, whether to message progress (default: FALSE).
+#' @return A named list of enrichment result objects (clusterProfiler/DOSE/ReactomePA).
 #' @export
-#' @importFrom clusterProfiler enrichGO simplify enrichKEGG bitr
-#' @importFrom org.Hs.eg.db org.Hs.eg.db
-#' @importFrom DOSE enrichDO
-#' @importFrom ReactomePA enrichPathway
 enrich_go <- function(large_communities,
                       semantic_space = "GO",
                       ontology = "BP",
-                      pvalueCutoff = 0.05, qvalueCutoff = 0.2) {
-  # Validate ontology
+                      pvalueCutoff = 0.05,
+                      qvalueCutoff = 0.2,
+                      verbose = FALSE) {
+
   valid_ontologies <- c("BP", "CC", "MF", "ALL")
   if (!ontology %in% valid_ontologies) {
-    stop("Ontology must be one of: ", paste(valid_ontologies, collapse = ", "))
+    stop("ontology must be one of: ", paste(valid_ontologies, collapse = ", "))
   }
 
-  # Validate semantic_space
   valid_spaces <- c("GO", "KEGG", "DO", "Reactome")
   if (!semantic_space %in% valid_spaces) {
-    stop("Semantic space must be one of: ", paste(valid_spaces, collapse = ", "))
+    stop("semantic_space must be one of: ", paste(valid_spaces, collapse = ", "))
   }
 
-  enrich_results <- list()
+  if (!is.list(large_communities)) stop("large_communities must be a list.")
 
-  # Check if large_communities is a list of community results (e.g., from detect_communities_across_bins)
-  if (all(sapply(large_communities, function(x) "communities" %in% names(x)))) {
-    # Process each bin's communities
-    for (bin_result in large_communities) {
-      bin <- bin_result$bin
-      comms <- bin_result$communities
-      for (i in seq_along(comms)) {
-        genes <- comms[[i]]
-        filtered_genes <- miEdgeR::filter_housekeeping(genes)
-        cat("Community", i, "in bin", bin, "- Genes after filtering:", length(filtered_genes), "\n")
+  .n_terms <- function(x) {
+    if (is.null(x)) return(0L)
+    if (!("result" %in% slotNames(x))) return(0L)
+    nrow(x@result)
+  }
 
-        # Perform enrichment based on semantic_space
-        if (semantic_space == "GO") {
-          enrich_result <- enrichGO(
-            gene = filtered_genes,
-            OrgDb = org.Hs.eg.db,
-            keyType = "SYMBOL",
-            ont = ontology,
-            pAdjustMethod = "BH",
-            pvalueCutoff = pvalueCutoff,
-            qvalueCutoff = qvalueCutoff
-          )
-          if (!is.null(enrich_result) && nrow(enrich_result) > 0) {
-            enrich_result <- simplify(enrich_result)
-          }
-        } else if (semantic_space == "KEGG") {
-          # Convert gene symbols to Entrez IDs
-          gene_map <- clusterProfiler::bitr(filtered_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-          if (nrow(gene_map) == 0) {
-            cat("No Entrez IDs mapped for Community", i, "in bin", bin, "\n")
-            next
-          }
-          enrich_result <- enrichKEGG(
-            gene = gene_map$ENTREZID,
-            organism = "hsa",
-            keyType = "ENTREZID",
-            pAdjustMethod = "BH",
-            pvalueCutoff = pvalueCutoff,
-            qvalueCutoff = qvalueCutoff
-          )
-        } else if (semantic_space == "DO") {
-          # Convert gene symbols to Entrez IDs
-          gene_map <- clusterProfiler::bitr(filtered_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-          if (nrow(gene_map) == 0) {
-            cat("No Entrez IDs mapped for Community", i, "in bin", bin, "\n")
-            next
-          }
-          enrich_result <- DOSE::enrichDO(
-            gene = gene_map$ENTREZID,
-            pAdjustMethod = "BH",
-            pvalueCutoff = pvalueCutoff,
-            qvalueCutoff = qvalueCutoff
-          )
-        } else if (semantic_space == "Reactome") {
-          # Convert gene symbols to Entrez IDs
-          gene_map <- clusterProfiler::bitr(filtered_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-          if (nrow(gene_map) == 0) {
-            cat("No Entrez IDs mapped for Community", i, "in bin", bin, "\n")
-            next
-          }
-          enrich_result <- ReactomePA::enrichPathway(
-            gene = gene_map$ENTREZID,
-            organism = "human",
-            pAdjustMethod = "BH",
-            pvalueCutoff = pvalueCutoff,
-            qvalueCutoff = qvalueCutoff
-          )
-        }
+  .filter_genes <- function(genes) {
+    genes <- unique(as.character(genes))
+    genes <- genes[!is.na(genes) & nzchar(genes)]
+    filter_housekeeping(genes)  # internal package function; do NOT use miEdgeR:: inside package
+  }
 
-        if (!is.null(enrich_result) && nrow(enrich_result) > 0) {
-          enrich_results[[paste(bin, "Group", i, sep = "_")]] <- enrich_result
-        } else {
-          cat("No significant enrichment for Community", i, "in bin", bin, "\n")
-        }
-      }
-    }
-  } else {
-    # Process as a simple list of communities
-    for (i in seq_along(large_communities)) {
-      genes <- large_communities[[i]]
-      filtered_genes <- miEdgeR::filter_housekeeping(genes)
-      cat("Community", i, "- Genes after filtering:", length(filtered_genes), "\n")
+  .symbol_to_entrez <- function(symbols) {
+    # Return unique ENTREZIDs; NULL if none map
+    gm <- suppressMessages(
+      clusterProfiler::bitr(
+        symbols,
+        fromType = "SYMBOL",
+        toType = "ENTREZID",
+        OrgDb = org.Hs.eg.db::org.Hs.eg.db
+      )
+    )
+    if (is.null(gm) || nrow(gm) == 0) return(NULL)
+    unique(gm$ENTREZID)
+  }
 
-      if (semantic_space == "GO") {
-        enrich_result <- enrichGO(
+  .do_enrich <- function(filtered_genes) {
+    if (length(filtered_genes) < 5) return(NULL)
+
+    if (semantic_space == "GO") {
+      er <- suppressMessages(
+        clusterProfiler::enrichGO(
           gene = filtered_genes,
-          OrgDb = org.Hs.eg.db,
+          OrgDb = org.Hs.eg.db::org.Hs.eg.db,
           keyType = "SYMBOL",
           ont = ontology,
           pAdjustMethod = "BH",
           pvalueCutoff = pvalueCutoff,
           qvalueCutoff = qvalueCutoff
         )
-        if (!is.null(enrich_result) && nrow(enrich_result) > 0) {
-          enrich_result <- simplify(enrich_result)
-        }
-      } else if (semantic_space == "KEGG") {
-        # Convert gene symbols to Entrez IDs
-        gene_map <- clusterProfiler::bitr(filtered_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-        if (nrow(gene_map) == 0) {
-          cat("No Entrez IDs mapped for Community", i, "\n")
-          next
-        }
-        enrich_result <- enrichKEGG(
-          gene = gene_map$ENTREZID,
-          organism = "hsa",
-          keyType = "ENTREZID",
-          pAdjustMethod = "BH",
-          pvalueCutoff = pvalueCutoff,
-          qvalueCutoff = qvalueCutoff
-        )
-      } else if (semantic_space == "DO") {
-        # Convert gene symbols to Entrez IDs
-        gene_map <- clusterProfiler::bitr(filtered_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-        if (nrow(gene_map) == 0) {
-          cat("No Entrez IDs mapped for Community", i, "\n")
-          next
-        }
-        enrich_result <- DOSE::enrichDO(
-          gene = gene_map$ENTREZID,
-          pAdjustMethod = "BH",
-          pvalueCutoff = pvalueCutoff,
-          qvalueCutoff = qvalueCutoff
-        )
-      } else if (semantic_space == "Reactome") {
-        # Convert gene symbols to Entrez IDs
-        gene_map <- clusterProfiler::bitr(filtered_genes, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-        if (nrow(gene_map) == 0) {
-          cat("No Entrez IDs mapped for Community", i, "\n")
-          next
-        }
-        enrich_result <- ReactomePA::enrichPathway(
-          gene = gene_map$ENTREZID,
-          organism = "human",
-          pAdjustMethod = "BH",
-          pvalueCutoff = pvalueCutoff,
-          qvalueCutoff = qvalueCutoff
-        )
-      }
+      )
+      if (.n_terms(er) > 1) er <- suppressMessages(clusterProfiler::simplify(er))
+      return(er)
+    }
 
-      if (!is.null(enrich_result) && nrow(enrich_result) > 0) {
-        enrich_results[[paste("Community", i)]] <- enrich_result
-      } else {
-        cat("No significant enrichment for Community", i, "\n")
+    entrez <- .symbol_to_entrez(filtered_genes)
+    if (is.null(entrez) || length(entrez) < 5) return(NULL)
+
+    if (semantic_space == "KEGG") {
+      return(suppressMessages(
+        clusterProfiler::enrichKEGG(
+          gene = entrez,
+          organism = "hsa",
+          keyType = "kegg",
+          pAdjustMethod = "BH",
+          pvalueCutoff = pvalueCutoff,
+          qvalueCutoff = qvalueCutoff
+        )
+      ))
+    }
+
+    if (semantic_space == "DO") {
+      return(suppressMessages(
+        DOSE::enrichDO(
+          gene = entrez,
+          pAdjustMethod = "BH",
+          pvalueCutoff = pvalueCutoff,
+          qvalueCutoff = qvalueCutoff
+        )
+      ))
+    }
+
+    # Reactome
+    suppressMessages(
+      ReactomePA::enrichPathway(
+        gene = entrez,
+        organism = "human",
+        pAdjustMethod = "BH",
+        pvalueCutoff = pvalueCutoff,
+        qvalueCutoff = qvalueCutoff
+      )
+    )
+  }
+
+  enrich_results <- list()
+
+  is_bin_results <- all(vapply(
+    large_communities,
+    function(x) is.list(x) && !is.null(x$communities) && !is.null(x$bin),
+    logical(1)
+  ))
+
+  if (is_bin_results) {
+    for (bin_result in large_communities) {
+      bin <- as.character(bin_result$bin)
+      comms <- bin_result$communities
+      if (!is.list(comms) || length(comms) == 0) next
+
+      for (i in seq_along(comms)) {
+        genes <- comms[[i]]
+        filtered_genes <- .filter_genes(genes)
+
+        er <- .do_enrich(filtered_genes)
+        if (.n_terms(er) > 0) {
+          enrich_results[[paste(bin, "Module", i, sep = "_")]] <- er
+        } else if (verbose) {
+          message("No enrichment: bin=", bin, " module=", i, " (genes=", length(filtered_genes), ")")
+        }
+      }
+    }
+  } else {
+    for (i in seq_along(large_communities)) {
+      genes <- large_communities[[i]]
+      filtered_genes <- .filter_genes(genes)
+
+      er <- .do_enrich(filtered_genes)
+      if (.n_terms(er) > 0) {
+        enrich_results[[paste0("Module_", i)]] <- er
+      } else if (verbose) {
+        message("No enrichment: module=", i, " (genes=", length(filtered_genes), ")")
       }
     }
   }
 
-  # Print enrichment results
-  for (name in names(enrich_results)) {
-    cat("Enrichment for", name, ":\n")
-    print(head(enrich_results[[name]]@result, 4))
-  }
-
   enrich_results
 }
+

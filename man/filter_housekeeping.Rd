@@ -7,11 +7,11 @@
 filter_housekeeping(gene_list)
 }
 \arguments{
-\item{gene_list}{Vector of gene names}
+\item{gene_list}{Character vector of gene names.}
 }
 \value{
-Filtered gene list excluding housekeeping genes
+Character vector of filtered gene names.
 }
 \description{
-Filter Housekeeping Genes
+Removes common housekeeping / technical genes (ribosomal, GAPDH/ACTB, mitochondrial).
 }

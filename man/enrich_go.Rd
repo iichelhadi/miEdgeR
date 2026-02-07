@@ -9,22 +9,26 @@ enrich_go(
   semantic_space = "GO",
   ontology = "BP",
   pvalueCutoff = 0.05,
-  qvalueCutoff = 0.2
+  qvalueCutoff = 0.2,
+  verbose = FALSE
 )
 }
 \arguments{
-\item{large_communities}{A list of communities or a list of community detection results (from detect_communities_across_bins).}
+\item{large_communities}{A list of communities OR a list of bin results from detect_communities_across_bins()
+where each element contains $bin and $communities.}
 
-\item{semantic_space}{Character, semantic space to use ("GO", "KEGG", "DO", "Reactome") (default: "GO").}
+\item{semantic_space}{Character, one of: "GO", "KEGG", "DO", "Reactome" (default: "GO").}
 
-\item{ontology}{Character, GO ontology to use ("BP", "CC", "MF", or "ALL") (default: "BP").}
+\item{ontology}{Character, GO ontology: "BP", "CC", "MF", "ALL" (default: "BP").}
 
 \item{pvalueCutoff}{Numeric, p-value cutoff for enrichment (default: 0.05).}
 
 \item{qvalueCutoff}{Numeric, q-value cutoff for enrichment (default: 0.2).}
+
+\item{verbose}{Logical, whether to message progress (default: FALSE).}
 }
 \value{
-A named list of enrichment results.
+A named list of enrichment result objects (clusterProfiler/DOSE/ReactomePA).
 }
 \description{
 Performs enrichment analysis for each community using specified semantic space.

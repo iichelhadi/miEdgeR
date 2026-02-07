@@ -12,17 +12,18 @@ choose_adaptive_nbins(
 )
 }
 \arguments{
-\item{expr_data}{Expression data}
+\item{expr_data}{Numeric vector OR matrix (genes x cells) used to estimate bins.}
 
-\item{min_bins}{Minimum number of bins}
+\item{min_bins}{Minimum number of bins.}
 
-\item{max_bins}{Maximum number of bins}
+\item{max_bins}{Maximum number of bins.}
 
-\item{min_cells_per_bin}{Minimum cells per bin}
+\item{min_cells_per_bin}{Minimum cells per bin.}
 }
 \value{
-Number of bins
+Integer number of bins.
 }
 \description{
-Choose Adaptive Number of Bins
+Heuristic bin choice (Freedman–Diaconis-like), constrained by min/max bins and
+a minimum expected cells-per-bin.
 }

@@ -42,7 +42,6 @@ library(ggplot2)
 library(ggraph)
 library(flextable)
 
-# seurat_obj <- readRDS('pbmc3k.rds')
 seurat_obj <- readRDS('Zhou_2020_control.rds')
 ```
 

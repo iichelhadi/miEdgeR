@@ -5,7 +5,7 @@
 \title{Detect Communities
 Detects communities using label propagation and neighborhood overlap.}
 \usage{
-detect_communities(graph, min_size = 10, overlap_threshold = 0.1)
+detect_communities(graph, min_size = 10, overlap_threshold = 0.1, seed = 123)
 }
 \arguments{
 \item{graph}{Input igraph object.}
@@ -13,9 +13,11 @@ detect_communities(graph, min_size = 10, overlap_threshold = 0.1)
 \item{min_size}{Minimum community size.}
 
 \item{overlap_threshold}{Overlap threshold for adding genes (default: 0.1).}
+
+\item{seed}{RNG seed.}
 }
 \value{
-List with communities and their sizes.
+List with groups, bridge genes, and gene2mod mapping.
 }
 \description{
 Detect Communities

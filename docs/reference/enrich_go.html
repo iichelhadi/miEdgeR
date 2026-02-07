@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">miEdgeR</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,7 +42,8 @@
 <span>  semantic_space <span class="op">=</span> <span class="st">"GO"</span>,</span>
 <span>  ontology <span class="op">=</span> <span class="st">"BP"</span>,</span>
 <span>  pvalueCutoff <span class="op">=</span> <span class="fl">0.05</span>,</span>
-<span>  qvalueCutoff <span class="op">=</span> <span class="fl">0.2</span></span>
+<span>  qvalueCutoff <span class="op">=</span> <span class="fl">0.2</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -51,15 +52,16 @@
 
 
 <dl><dt id="arg-large-communities">large_communities<a class="anchor" aria-label="anchor" href="#arg-large-communities"></a></dt>
-<dd><p>A list of communities or a list of community detection results (from detect_communities_across_bins).</p></dd>
+<dd><p>A list of communities OR a list of bin results from detect_communities_across_bins()
+where each element contains $bin and $communities.</p></dd>
 
 
 <dt id="arg-semantic-space">semantic_space<a class="anchor" aria-label="anchor" href="#arg-semantic-space"></a></dt>
-<dd><p>Character, semantic space to use ("GO", "KEGG", "DO", "Reactome") (default: "GO").</p></dd>
+<dd><p>Character, one of: "GO", "KEGG", "DO", "Reactome" (default: "GO").</p></dd>
 
 
 <dt id="arg-ontology">ontology<a class="anchor" aria-label="anchor" href="#arg-ontology"></a></dt>
-<dd><p>Character, GO ontology to use ("BP", "CC", "MF", or "ALL") (default: "BP").</p></dd>
+<dd><p>Character, GO ontology: "BP", "CC", "MF", "ALL" (default: "BP").</p></dd>
 
 
 <dt id="arg-pvaluecutoff">pvalueCutoff<a class="anchor" aria-label="anchor" href="#arg-pvaluecutoff"></a></dt>
@@ -69,10 +71,14 @@
 <dt id="arg-qvaluecutoff">qvalueCutoff<a class="anchor" aria-label="anchor" href="#arg-qvaluecutoff"></a></dt>
 <dd><p>Numeric, q-value cutoff for enrichment (default: 0.2).</p></dd>
 
+
+<dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
+<dd><p>Logical, whether to message progress (default: FALSE).</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>A named list of enrichment results.</p>
+    <p>A named list of enrichment result objects (clusterProfiler/DOSE/ReactomePA).</p>
     </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -84,7 +90,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>

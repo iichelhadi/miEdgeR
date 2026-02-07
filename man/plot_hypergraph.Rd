@@ -8,7 +8,7 @@ plot_hypergraph(
   large_communities,
   comm_indices = NULL,
   title = "Hypergraph with Overlapping Communities",
-  key_genes = c("PRSS1", "PRSS2")
+  key_genes = NULL
 )
 }
 \arguments{
@@ -18,11 +18,12 @@ plot_hypergraph(
 
 \item{title}{Character, title of the plot (default: "Hypergraph with Overlapping Communities").}
 
-\item{key_genes}{Character vector, additional genes to label (default: c("PRSS1", "PRSS2")).}
+\item{key_genes}{Character vector, additional genes to label (default: NULL).}
 }
 \value{
 A ggraph plot object.
 }
 \description{
-Visualizes a hypergraph where communities are hyperedges, highlighting overlapping genes between specified communities.
+Visualizes a hypergraph where communities are hyperedges, highlighting genes that
+occur in >1 selected community.
 }

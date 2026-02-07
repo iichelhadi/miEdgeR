@@ -9,7 +9,7 @@ summarize_hub_genes_across_bins(comm_results, pt_results, top_n = 10)
 \arguments{
 \item{comm_results}{A list of community detection results from detect_communities_across_bins.}
 
-\item{pt_results}{A list of pseudotime bin results from compute_pseudotime_mi_network.}
+\item{pt_results}{A list of pseudotime bin graphs from compute_pseudotime_mi_network.}
 
 \item{top_n}{Integer, number of top hub genes to include per community (default: 10).}
 }
@@ -17,5 +17,6 @@ summarize_hub_genes_across_bins(comm_results, pt_results, top_n = 10)
 A flextable object.
 }
 \description{
-Generates a flextable summarizing the top hub genes (by degree) for each community across pseudotime bins.
+Generates a flextable summarizing the top hub genes (by degree) for each community
+across pseudotime bins.
 }

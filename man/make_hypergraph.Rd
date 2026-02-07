@@ -7,9 +7,9 @@
 make_hypergraph(group_list, all_genes)
 }
 \arguments{
-\item{group_list}{List of gene groups}
+\item{group_list}{List of gene groups (character vectors).}
 
-\item{all_genes}{All genes}
+\item{all_genes}{Character vector of all genes to include as vertices.}
 }
 \value{
 List containing hypergraph, incidence matrix, genes, and groups

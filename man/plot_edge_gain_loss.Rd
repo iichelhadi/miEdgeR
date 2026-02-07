@@ -11,15 +11,17 @@ plot_edge_gain_loss(
 )
 }
 \arguments{
-\item{pt_results}{A list of pseudotime bin results from compute_pseudotime_mi_network.}
+\item{pt_results}{A named list of pseudotime-bin results. Each element can be an igraph
+or a list containing $graph (igraph).}
 
-\item{cluster_id}{Character, cluster ID to display (default: "C1").}
+\item{cluster_id}{Character label used only for plot annotation (default: "C1").}
 
-\item{title}{Character, title of the plot (default: "Edge Gain/Loss/Stable Counts Per Bin").}
+\item{title}{Plot title.}
 }
 \value{
-A list containing the ggplot object and a list of edge changes (stable, gained, lost) per bin pair.
+A list with: plot (ggplot or NULL) and edge_details (stable/gained/lost per bin-pair).
 }
 \description{
-Plots the count of stable, gained, and lost edges between consecutive pseudotime bins and returns edge details.
+Plots the count of stable, gained, and lost edges between consecutive pseudotime bins
+and returns edge details (from/to and optional weights).
 }

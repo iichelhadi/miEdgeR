@@ -16,7 +16,7 @@ make_pt_bins(seurat_obj, pseudotime_col, n_bins = 5, bin_method = "quantile")
 \item{bin_method}{Binning method ("quantile" or "equal_width")}
 }
 \value{
-Vector of bin assignments
+Integer vector of bin assignments (length = ncol(seurat_obj)); NA for cells without pseudotime
 }
 \description{
 Bin Cells Along Pseudotime

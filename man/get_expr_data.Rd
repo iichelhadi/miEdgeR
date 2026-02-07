@@ -36,7 +36,7 @@ get_expr_data(
 \item{min_expr_pct}{Minimum expression percentage}
 }
 \value{
-Expression matrix
+Expression matrix (genes x cells)
 }
 \description{
 Get Expression Data for a Cluster

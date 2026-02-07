@@ -12,11 +12,14 @@ detect_communities_across_bins(
   freq_threshold = 0.5,
   percentile = 0.95,
   resolution_parameter = 0.6,
-  overlap_threshold = 0.05
+  overlap_threshold = 0.05,
+  seed = 123,
+  verbose = FALSE
 )
 }
 \arguments{
-\item{pt_results}{A list of pseudotime bin results from compute_pseudotime_mi_network.}
+\item{pt_results}{A named list of per-bin results from compute_pseudotime_mi_network.
+Each element may be an igraph object OR a list containing $graph (igraph).}
 
 \item{min_size}{Integer, minimum size of communities to retain (default: 10).}
 
@@ -31,10 +34,15 @@ detect_communities_across_bins(
 \item{resolution_parameter}{Numeric, resolution parameter for Leiden clustering (default: 0.6).}
 
 \item{overlap_threshold}{Numeric, threshold for neighborhood overlap expansion (default: 0.05).}
+
+\item{seed}{Integer RNG seed base (default: 123). Applied per bin as seed + bin_index.}
+
+\item{verbose}{Logical, print progress messages (default: FALSE).}
 }
 \value{
-A list of community detection results for each bin.
+A named list with one entry per bin: consensus_graph, communities, sizes.
 }
 \description{
-Detects communities in each pseudotime bin using percolation, Leiden clustering, and neighborhood overlap.
+Detects communities in each pseudotime bin using percolation, Leiden clustering,
+and neighborhood overlap expansion.
 }

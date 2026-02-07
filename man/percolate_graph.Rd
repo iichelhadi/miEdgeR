@@ -6,10 +6,11 @@
 \usage{
 percolate_graph(
   graph,
-  n_iterations = 50,
+  n_iterations = 100,
   edge_fraction = 0.6,
   freq_threshold = 0.5,
-  percentile = 0.95
+  percentile = 0.95,
+  seed = 123
 )
 }
 \arguments{
@@ -22,10 +23,13 @@ percolate_graph(
 \item{freq_threshold}{Frequency threshold for edge retention.}
 
 \item{percentile}{Percentile for initial edge filtering (default: 0.95).}
+
+\item{seed}{RNG seed (default: 123).}
 }
 \value{
 Consensus igraph object.
 }
 \description{
-Creates a consensus graph by filtering edges at the 95th percentile and retaining those in >=50% of iterations.
+Creates a consensus graph by filtering edges at a weight percentile and retaining
+those that appear in >=freq_threshold of iterations.
 }

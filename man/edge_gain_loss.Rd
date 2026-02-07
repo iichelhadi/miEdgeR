@@ -7,10 +7,10 @@
 edge_gain_loss(bin_graphs)
 }
 \arguments{
-\item{bin_graphs}{List of graphs per bin}
+\item{bin_graphs}{List of graphs per bin (NULL allowed)}
 }
 \value{
-List of stable, gained, and lost edges
+List of stable, gained, lost edge keys
 }
 \description{
 Edge Gain/Loss Analysis

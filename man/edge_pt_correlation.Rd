@@ -16,25 +16,25 @@ edge_pt_correlation(
 )
 }
 \arguments{
-\item{graph}{An igraph object.}
+\item{graph}{igraph object (must have edge attribute 'weight' or will use 1)}
 
-\item{seurat_obj}{A Seurat object.}
+\item{seurat_obj}{Seurat object}
 
-\item{pseudotime_col}{Character, metadata column for pseudotime.}
+\item{pseudotime_col}{Metadata column for pseudotime}
 
-\item{assay}{Character, assay to use.}
+\item{assay}{Assay name}
 
-\item{layer}{Character, data layer to use.}
+\item{layer}{Layer (v5) / slot (v4)}
 
-\item{method}{Character, correlation method.}
+\item{method}{Correlation method}
 
-\item{edge_threshold}{Numeric, edge weight threshold.}
+\item{edge_threshold}{Quantile threshold for edge weights (0-1)}
 
-\item{n_cores}{Integer, number of cores for parallel computation.}
+\item{n_cores}{Cores for mclapply}
 }
 \value{
-A data frame with edge correlations.
+Data frame with edge correlations
 }
 \description{
-Computes correlations between edge weights and pseudotime for a given graph.
+Correlates (expr(gene1) + expr(gene2)) with pseudotime for top-weight edges.
 }

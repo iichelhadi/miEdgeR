@@ -17,39 +17,42 @@ plot_edge_correlations(
   method = "spearman",
   edge_threshold = 0.95,
   n_cores = 5,
+  include_cross = FALSE,
   title = NULL
 )
 }
 \arguments{
-\item{comm_results}{A list of community detection results from detect_communities_across_bins.}
+\item{comm_results}{Output from detect_communities_across_bins()}
 
-\item{pt_results}{A list of pseudotime bin results from compute_pseudotime_mi_network.}
+\item{pt_results}{Output from compute_pseudotime_mi_network()}
 
-\item{seurat_obj}{A Seurat object containing pseudotime and cluster metadata.}
+\item{seurat_obj}{Seurat object with pseudotime metadata}
 
-\item{bin_name}{Character, name of the pseudotime bin to use (e.g., "PT2").}
+\item{bin_name}{Pseudotime bin name (e.g. "PT2")}
 
-\item{cluster_field}{Character, metadata field for cluster IDs (default: "RNA_snn_res.0.1").}
+\item{cluster_field}{Metadata column for cluster labels}
 
-\item{cluster_id}{Character, cluster ID to filter cells (default: "1").}
+\item{cluster_id}{Cluster ID to subset}
 
-\item{assay}{Character, assay to use (default: "RNA").}
+\item{assay}{Assay name}
 
-\item{layer}{Character, data layer to use (default: "data").}
+\item{layer}{Data layer}
 
-\item{pseudotime_col}{Character, metadata column for pseudotime (default: "pseudotime").}
+\item{pseudotime_col}{Pseudotime column name}
 
-\item{method}{Character, correlation method (default: "spearman").}
+\item{method}{Correlation method}
 
-\item{edge_threshold}{Numeric, edge weight threshold (default: 0.95).}
+\item{edge_threshold}{MI edge threshold}
 
-\item{n_cores}{Integer, number of cores for parallel computation (default: 5).}
+\item{n_cores}{Number of cores}
 
-\item{title}{Character, title of the plot (default: dynamically generated).}
+\item{include_cross}{Logical; include cross-community edges (default FALSE)}
+
+\item{title}{Optional plot title}
 }
 \value{
-A ggplot object.
+ggplot object or NULL
 }
 \description{
-Computes and plots the density of edge-pseudotime correlations for a specified pseudotime bin and cluster.
+Computes and plots the density of edge–pseudotime correlations for a specified pseudotime bin.
 }
