@@ -13,3 +13,7 @@ vignettes/*.R
 vignettes/*.bak
 vignettes/tmp/
 vignettes/*.html
+
+# ---- vignette render artifacts ----
+vignettes/*_files/
+vignettes/*.knit.md
