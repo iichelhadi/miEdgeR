@@ -3,3 +3,13 @@
 .RData
 *.bak
 * (copy)*
+
+# ---- TEMP: vignette working files (do not commit) ----
+vignettes/*.rds
+vignettes/*.csv
+vignettes/*.h5ad
+vignettes/*.h5seurat
+vignettes/*.R
+vignettes/*.bak
+vignettes/tmp/
+vignettes/*.html

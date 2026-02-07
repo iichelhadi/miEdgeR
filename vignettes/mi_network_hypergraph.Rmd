@@ -8,7 +8,7 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, dev = "png", dev.args = list(type = "cairo"))
 ```
 
 ## About this vignette
@@ -19,7 +19,7 @@ Prerequisites:
 
 R (≥ 4.2.0)
 
-Seurat object with clustering metadata (eg. RNA_snn_res.0.1) and optional pseudotime
+Seurat object with clustering metadata (eg. MG) and optional pseudotime
 
 Packages: miEdgeR, Seurat, igraph, hypergraph, dplyr, ggplot2, ggraph, flextable
 
@@ -27,11 +27,11 @@ Packages: miEdgeR, Seurat, igraph, hypergraph, dplyr, ggplot2, ggraph, flextable
 
 This vignette walks through the key steps of MI network construction and higher-order hypergraph analysis. Starting with a Seurat object, we show how to filter for highly variable genes, compute and threshold mutual information (MI), remove noise via percolation, detect communities, and represent those communities as hyperedges.
 
-    Note: This vignette requires the PBMC 3K dataset originally provided by the Seurat team. Please download the file pbmc3k.rds and place it in your working directory before running the code chunks.
+    Note: This vignette requires the Zhou et al Control Cortex dataset Microglia (MG) cluster https://doi.org/10.1038/s41591-019-0695-9.
 
 ## Load Libraries and Data
 
-We load all necessary packages and read in the preprocessed Seurat object. Ensure your object contains a clustering column (RNA_snn_res.0.1 in seurat demo pbmc3K data) corresponding to cluster IDs.
+We load all necessary packages and read in the preprocessed Seurat object. Ensure your object contains a clustering column (MG in seurat demo Zhou et al Control Cortex data) corresponding to cluster IDs.
 
 ```{r Load Libraries and Data}
 library(Seurat)
@@ -42,120 +42,145 @@ library(ggplot2)
 library(ggraph)
 library(flextable)
 
-seurat_obj <- readRDS('pbmc3k.rds')
+# seurat_obj <- readRDS('pbmc3k.rds')
+seurat_obj <- readRDS('Zhou_2020_control.rds')
 ```
 
 ## Data exploration
 
-Exploring the preprocessed pbmc3k data. For this tutorial we will focus on CD14+ Mono cluster "1"
+Exploring the preprocessed Zhou et al Control Cortex data. For this tutorial we will focus on cluster "MG"
 
-```{r, fig.alt="UMAP plot showing clustering of pbmc3k data"}
-DimPlot(seurat_obj, reduction = 'umap')
+```{r, fig.alt="UMAP plot showing clustering of Zhou et al Control Cortex data"}
+DimPlot(seurat_obj, group.by='cell_type', label=TRUE) + NoLegend()
 ```
 
-```{r, fig.width=8, fig.height=8, fig.alt="violin plot showing gene expression of selected genes in pbmc3k data"}
-features = c("MS4A1", "GNLY", "CD3E", "CD14", 
-             "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A")
-VlnPlot(seurat_obj, features = features)
+```{r, fig.width=8, fig.height=8, fig.alt="violin plot showing gene expression of selected genes in Zhou et al Control Cortex data"}
+features <- c(
+  "RBFOX3",      # neurons
+  "SLC17A7",     # excitatory
+  "GAD1",        # inhibitory
+  "GFAP",        # astrocytes
+  "MBP",         # oligodendrocytes
+  "PDGFRA",      # OPCs
+  "CX3CR1"       # microglia
+)
+
+VlnPlot(seurat_obj, features = features, group.by = "cell_type", pt.size = 0)
+
+# VlnPlot(seurat_obj, features = features)
 ```
 
 ## Building a Mutual-Information Network
 
 Here we call `compute_mi_network()`, which under the hood:
 
-1. Extracts expression for cluster "1" (up to 1,500 cells; genes > 5% of cells).  
+1. Extracts expression for cluster "MG" (up to 1,500 cells; genes > 5% of cells).  
 2. Filters to the top 3,000 most variable genes (after removing housekeeping genes).  
 3. Discretizes expression (adaptive binning) and computes pairwise MI in parallel.  
-4. Constructs an undirected igraph object by thresholding at the 95th percentile of MI values.  
+4. Constructs an undirected igraph object by thresholding at the 90th percentile of MI values.  
 
-You can adjust `percentile` (e.g. 0.90 for more liberal edges) or supply `fixed_threshold` for absolute MI cutoffs.
+You can adjust `percentile` (e.g. 0.85 for more liberal edges) or supply `fixed_threshold` for absolute MI cutoffs.
 
 Note: computing mi-network can be computationally demanding. We strongly advice to limit the number of cells and genes to the most variable ones
 
 ```{r Mutual-Information Network}
+set.seed(123)
+
 result <- compute_mi_network(
   seurat_obj,
-  cluster_id = "1",
-  cluster_field = "RNA_snn_res.0.1",
+  cluster_id = "MG",
+  cluster_field = "cell_type",
   assay_name = "RNA",
   counts_layer = "counts",
   data_layer = "data",
   min_expr_pct = 0.05,
   top_n_genes = 3000,
-  n_cores = parallel::detectCores() - 5
+  n_cores = max(1, parallel::detectCores() - 3)
 )
+
 mi_matrix <- result$mi_matrix
+
 graph_percentile <- build_mi_graph(mi_matrix, 
                                    threshold_method = "percentile", 
-                                   percentile = 0.95)
+                                   percentile = 0.90)
+
 cat("Vertices:", vcount(graph_percentile), "\n")
 cat("Edges:", ecount(graph_percentile), "\n")
 cat("Density:", graph.density(graph_percentile), "\n")
 ```
 
-The resulting MI matrix was filtered using the 95th percentile threshold with `build_mi_graph()`, producing a graph with 2911 genes (nodes), 211,804 edges, and a density of ~0.05. This indicates substantial gene-gene co-dependence within the cluster.
+The resulting MI matrix was filtered using the 90th percentile threshold with `build_mi_graph()`, producing a graph with 2924 genes (nodes), 427,547 edges, and a density of ~0.1. This indicates substantial gene-gene co-dependence within the cluster.
 
 ## Consensus Edges via Percolation
 
 Real-world networks can be noisy. We apply a simple "percolation" strategy:
 
-- **Pre-filter**: Keep only the top 5% of edges by weight.  
+- **Pre-filter**: Keep only strong edges (by percentile).  
 - **Resample** 100 times, each time retaining 60% of edges at random.  
 - **Consensus**: Edges appearing in ≥ 50% of iterations are considered stable.  
 
 This yields a consensus graph that filters out spurious edges.
 
+In miEdgeR v0.2+, percolation + edge canonicalization + weight hygiene are handled inside percolate_graph().
+
 ```{r Percolation}
-g_consensus <- percolate_graph(graph_percentile, n_iterations = 100, 
-                               edge_fraction = 0.6, freq_threshold = 0.5, 
-                               percentile = 0.95)
-set.seed(123)
-lc_comm <- cluster_label_prop(g_consensus, weights = E(g_consensus)$weight)
-lc_groups <- split(V(g_consensus)$name, membership(lc_comm))
-lc_groups <- Filter(function(x) length(x) >= 10, lc_groups)
+g_consensus <- percolate_graph(
+  graph_percentile,
+  n_iterations   = 100,
+  edge_fraction  = 0.6,
+  freq_threshold = 0.5,
+  percentile     = 0.9
+)
 
-# Neighborhood overlap
-adj_matrix <- as_adjacency_matrix(g_consensus, attr = "weight", sparse = FALSE)
-overlap_threshold <- 0.1
-for (node in V(g_consensus)$name) {
-  idx <- which(V(g_consensus)$name == node)
-  neighbors <- V(g_consensus)$name[adj_matrix[idx, ] > 0]
-  if (length(neighbors) == 0) next
-  for (i in seq_along(lc_groups)) {
-    comm_genes <- lc_groups[[i]]
-    ov <- length(intersect(neighbors, comm_genes)) / length(neighbors)
-    if (ov >= overlap_threshold && !(node %in% comm_genes)) {
-      lc_groups[[i]] <- c(comm_genes, node)
-    }
-  }
-}
+cat("Consensus vertices:", vcount(g_consensus), "\n")
+cat("Consensus edges:", ecount(g_consensus), "\n")
+cat("Consensus density:", graph.density(g_consensus), "\n")
 
-large_communities <- lc_groups
-cat("Communities (size >= 10):", length(large_communities), "\n")
-cat("Sizes:", sapply(large_communities, length), "\n")
 ```
 
-Community detection was performed with label propagation (`cluster_label_prop()`), yielding two robust gene communities (sizes: 571 and 93). A neighborhood overlap step further enriched communities by including strongly connected neighboring genes.
+## Community Detection
 
+We use detect_communities() which performs community detection and overlap expansion consistently.
+
+```{r Community detection}
+set.seed(123)
+
+comm_out <- detect_communities(
+  g_consensus,
+  min_size          = 10,
+  overlap_threshold = 0.2
+)
+
+# v0.2 may return either:
+# - a plain list of communities
+# - or a richer list with $communities, $bridge, $gene2mod
+
+# v0.2 canonical structure
+stopifnot("groups" %in% names(comm_out))
+
+large_communities <- comm_out$groups
+
+cat("Communities (size >= 10):", length(large_communities), "\n")
+cat("Sizes:", sapply(large_communities, length), "\n")
+
+```
 
 ## Clustering coefficient
+
 Compute additional network metrics for the consensus graph.
 
-```{r Clustering}
+```{r}
 clustering_coeff <- transitivity(g_consensus, type = "global")
 cat("Global clustering coefficient:", clustering_coeff, "\n")
 
-# Centrality measures (degree, betweenness, closeness)
-degree_centrality <- degree(g_consensus)
+degree_centrality      <- degree(g_consensus)
 betweenness_centrality <- betweenness(g_consensus)
-closeness_centrality <- closeness(g_consensus)
+closeness_centrality   <- closeness(g_consensus)
 
-# Top 5 genes by each centrality measure
-top_degree <- names(sort(degree_centrality, decreasing = TRUE))[1:10]
+top_degree      <- names(sort(degree_centrality, decreasing = TRUE))[1:10]
 top_betweenness <- names(sort(betweenness_centrality, decreasing = TRUE))[1:10]
-top_closeness <- names(sort(closeness_centrality, decreasing = TRUE))[1:10]
+top_closeness   <- names(sort(closeness_centrality, decreasing = TRUE))[1:10]
 
-# Create a summary table
 centrality_table <- data.frame(
   Metric = c("Degree", "Betweenness", "Closeness"),
   Top_Genes = c(
@@ -165,30 +190,35 @@ centrality_table <- data.frame(
   ),
   stringsAsFactors = FALSE
 )
+
 ft_centrality <- flextable::flextable(centrality_table) %>%
   flextable::autofit() %>%
-  flextable::set_header_labels(Metric = "Centrality Metric", Top_Genes = "Top 5 Genes") %>%
+  flextable::set_header_labels(Metric = "Centrality Metric", Top_Genes = "Top 10 Genes") %>%
   flextable::bg(part = "header", bg = "gray") %>%
   flextable::theme_vanilla()
+
 ft_centrality
+
 ```
 
-We assessed the topology of the consensus MI network using global clustering coefficient (`transitivity()`), which was moderately high, indicating local gene co-regulation. Centrality analysis identified key genes based on degree, betweenness, and closeness, highlighting potential regulatory hubs such as **ATP5D**, **NEDD8**, and **COPE**. These central genes may play critical roles in cluster-specific transcriptional programs.
-
 ## Network Visualization
-Visualize a subset of the MI network. Nodes are colored by community, and top hub genes per community are labeled. The plot highlights distinct gene modules with highly connected core genes such as ATP5D, PSMA7, and LYZ.
+Visualize a subset of the MI network. Nodes are colored by community, and top hub genes per community are labeled. 
 
-```{r, fig.width= 10, fig.height=6, fig.alt="network plot of C1 communities"}
-plot_mi_network(g_consensus, large_communities, title = "C1 MI Network Communities")
+```{r, fig.width= 10, fig.height=6, fig.alt="network plot of MG communities"}
+plot_mi_network(g_consensus, large_communities, title = "MG MI Network Communities")
 ```
 
 ## Hypergraph Visualization
 
-To visualize overlapping gene communities, we constructed a hypergraph where genes are connected to their assigned communities. Overlapping genes (shared across communities) are highlighted in red, community nodes in green, and unique genes in blue. This representation captures complex gene sharing across modules, emphasizing central roles for genes like **LYZ**, **GSTP1**, and various MHC class genes.
+To visualize overlapping gene communities, we constructed a hypergraph where genes are connected to their assigned communities. Overlapping genes (shared across communities) are highlighted in red, community nodes in green, and unique genes in blue.
 
 ```{r, fig.width= 8 , fig.height=8, fig.alt="Hypergraph visualization of overlapping communities"}
-plot_hypergraph(large_communities, comm_indices = c(1, 2), 
-                title = "C1 Hypergraph with Overlapping Communities")
+plot_hypergraph(
+  large_communities,
+  comm_indices = c(1, 2),
+  title        = "MG Hypergraph with Overlapping Communities",
+  key_genes    = NULL
+)
 ```
 
 ## Community Sizes
@@ -196,33 +226,35 @@ Visualize community sizes.
 
 ```{r, fig.alt="bar plot showing community sizes"}
 comm_sizes_df <- data.frame(
-  Community = paste("Community", seq_along(sapply(large_communities, length))),
-  Size = sapply(large_communities, length)
+  Community = paste("Community", seq_along(large_communities)),
+  Size      = sapply(large_communities, length)
 )
+
 p_comm_sizes <- ggplot(comm_sizes_df, aes(x = Community, y = Size, fill = Community)) +
   geom_bar(stat = "identity") +
-  labs(title = "Community Sizes (C1)", x = "Community", y = "Size") +
+  labs(title = "Community Sizes (MG)", x = "Community", y = "Size") +
   theme_minimal() +
   theme(legend.position = "none")
-print(p_comm_sizes)
-```
 
+print(p_comm_sizes)
+
+```
 
 ## Hub Genes Table from Full Graph
 Generate a table of top hub genes (by degree) for each community using the full graph.
 
 ```{r hub_genes_ful}
-summarize_hub_genes(graph_percentile, large_communities, cluster_name = "C1")
+summarize_hub_genes(graph_percentile, large_communities, cluster_name = "MG")
 ```
 
-We identified top hub genes within each community by ranking nodes based on degree centrality. Using `summarize_hub_genes()`, we extracted key genes likely involved in core regulatory processes. For example, **S100A8**, **ATP5D**, and **HLA-DPA1** emerged as central in Community 1, while **S100A9**, **LYZ**, and **IFITM2** were prominent in Community 2. These hubs may serve as key functional markers or regulatory nodes in the cluster.
+We identified top hub genes within each community by ranking nodes based on degree centrality. Using `summarize_hub_genes()`. Key genes extracted potentially involved in core regulatory processes. 
 
-## Hub Genes
+## Hub Genes (Percolated)
 
 Identify top hub genes for communities from percolated graph.
 
 ```{r hub_genes_percolated}
-summarize_hub_genes(g_consensus, large_communities, cluster_name = "C1")
+summarize_hub_genes(g_consensus, large_communities, cluster_name = "MG")
 ```
 
 ## GO Enrichment Analysis
@@ -241,9 +273,10 @@ print(dot_plot)
 ## Save Results
 ```
 
+## Save Results
 
 ```{r}
-saveRDS(result, "results.rds")
+# saveRDS(result, file = "mi_network_results.rds")
 ```
 
 ```{r}
