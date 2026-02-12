@@ -89,5 +89,5 @@ plot_hypergraph(hg, title = "Overlapping Gene Modules")
 Please do not reuse or redistribute without permission.  
 
 📄 This package underpins the analyses in:
-Iich E. (2026) Large-scale single-cell atlas integration to resolve beta-cell state transitions under metabolic stress. bioRxiv.
+Iich E. (2026) Integrated meta-analysis of public human pancreatic single-cell transcriptomes reveals distinct beta-cell state trajectories across aging and diabetes. bioRxiv.
 A citable version will be released upon manuscript acceptance.
