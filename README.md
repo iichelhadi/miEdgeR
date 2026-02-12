@@ -87,5 +87,7 @@ plot_hypergraph(hg, title = "Overlapping Gene Modules")
 
 📌 This is a pre-publication version (v0.2.0) of `miEdgeR`.  
 Please do not reuse or redistribute without permission.  
-A citable version will be released upon manuscript acceptance.
 
+📄 This package underpins the analyses in:
+Iich E. (2026) Large-scale single-cell atlas integration to resolve beta-cell state transitions under metabolic stress. bioRxiv.
+A citable version will be released upon manuscript acceptance.
