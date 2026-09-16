@@ -14,7 +14,7 @@ miEdgeR provides a streamlined pipeline for single‐cell RNA‐seq data that:
 
     Quantifies module dynamics along pseudotime trajectories
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: GPL v3](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ---
 
